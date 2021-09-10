@@ -249,63 +249,63 @@ def convert_to_model_input_format(input_file, output_file, max_paths, not_includ
     
     return total_valid_examples
 
-if __name__ == '__main__':
-    hash_to_string_dict = {}
-    token_freq_dict = {}
-    path_freq_dict = {}
-    target_freq_dict = {}
+# if __name__ == '__main__':
+#     hash_to_string_dict = {}
+#     token_freq_dict = {}
+#     path_freq_dict = {}
+#     target_freq_dict = {}
 
-    include_paths = {'ast':False, 'cfg':False, 'cdg':False, 'ddg':False}
-    max_path_count = {'ast':0, 'cfg':0, 'cdg':0, 'ddg':0}
+#     include_paths = {'ast':False, 'cfg':False, 'cdg':False, 'ddg':False}
+#     max_path_count = {'ast':0, 'cfg':0, 'cdg':0, 'ddg':0}
 
-    config = configparser.ConfigParser()
-    config.read("config.ini")
-    input_dir = config['outputFormatter']['inputDirectory']
-    datasets = config['outputFormatter']['datasets']
-    datasets = [dataset.strip() for dataset in datasets.split(',')]
-    output_dir = config['outputFormatter']['outputDirectory']
-    dataset_name_ext = config['outputFormatter']['datasetNameExtension']
-    not_include_methods = config['outputFormatter']['notIncludeMethods']
-    not_include_methods = [method.strip() for method in not_include_methods.split(',')]
+#     config = configparser.ConfigParser()
+#     config.read("config.ini")
+#     input_dir = config['outputFormatter']['inputDirectory']
+#     datasets = config['outputFormatter']['datasets']
+#     datasets = [dataset.strip() for dataset in datasets.split(',')]
+#     output_dir = config['outputFormatter']['outputDirectory']
+#     dataset_name_ext = config['outputFormatter']['datasetNameExtension']
+#     not_include_methods = config['outputFormatter']['notIncludeMethods']
+#     not_include_methods = [method.strip() for method in not_include_methods.split(',')]
 
-    include_paths['ast'] = config['outputFormatter'].getboolean('includeASTPaths')
-    include_paths['cfg'] = config['outputFormatter'].getboolean('includeCFGPaths')
-    include_paths['cdg'] = config['outputFormatter'].getboolean('includeCDGPaths')
-    include_paths['ddg'] = config['outputFormatter'].getboolean('includeDDGPaths')
+#     include_paths['ast'] = config['outputFormatter'].getboolean('includeASTPaths')
+#     include_paths['cfg'] = config['outputFormatter'].getboolean('includeCFGPaths')
+#     include_paths['cdg'] = config['outputFormatter'].getboolean('includeCDGPaths')
+#     include_paths['ddg'] = config['outputFormatter'].getboolean('includeDDGPaths')
 
-    max_path_count['ast'] = config['outputFormatter'].getint('maxASTPaths')
-    max_path_count['cfg'] = config['outputFormatter'].getint('maxCFGPaths')
-    max_path_count['cdg'] = config['outputFormatter'].getint('maxCDGPaths')
-    max_path_count['ddg'] = config['outputFormatter'].getint('maxDDGPaths')
+#     max_path_count['ast'] = config['outputFormatter'].getint('maxASTPaths')
+#     max_path_count['cfg'] = config['outputFormatter'].getint('maxCFGPaths')
+#     max_path_count['cdg'] = config['outputFormatter'].getint('maxCDGPaths')
+#     max_path_count['ddg'] = config['outputFormatter'].getint('maxDDGPaths')
 
-    ## For normal Train-Test-Val split.
-    for dataset_name in datasets:
-        destination_dir = os.path.join(output_dir, dataset_name, dataset_name_ext)
-        data_path = os.path.join(input_dir, dataset_name + ".c2v")
-        os.makedirs(destination_dir, exist_ok=True)
+#     ## For normal Train-Test-Val split.
+#     for dataset_name in datasets:
+#         destination_dir = os.path.join(output_dir, dataset_name, dataset_name_ext)
+#         data_path = os.path.join(input_dir, dataset_name + ".c2v")
+#         os.makedirs(destination_dir, exist_ok=True)
 
-        ## Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
-        num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name, "{}.c2v".format(dataset_name + '.full')), max_path_count, not_include_methods, hash_to_string_dict)
+#         ## Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
+#         num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name, "{}.c2v".format(dataset_name + '.full')), max_path_count, not_include_methods, hash_to_string_dict)
 
-        ## Shuffle the output file of above step.
-        if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))):
-            print("{} already exists!".format(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))))
-        else:
-            os.system('./terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(output_dir=output_dir, dataset_name=dataset_name))
+#         ## Shuffle the output file of above step.
+#         if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))):
+#             print("{} already exists!".format(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))))
+#         else:
+#             os.system('./terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(output_dir=output_dir, dataset_name=dataset_name))
 
-        ## Splitting the joined and shuffled file into Train-Test-Val sets.
-        split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples)
+#         ## Splitting the joined and shuffled file into Train-Test-Val sets.
+#         split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples)
 
-        ## Use "include_paths" to select specific type of paths.
-        filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
-        filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
-        filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
+#         ## Use "include_paths" to select specific type of paths.
+#         filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
+#         filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
+#         filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
 
-        ## Create dictionaries using training data.
-        create_dictionaries(os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)), token_freq_dict, path_freq_dict, target_freq_dict)
+#         ## Create dictionaries using training data.
+#         create_dictionaries(os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)), token_freq_dict, path_freq_dict, target_freq_dict)
 
-        ## Save the dictionary file.
-        save_dictionaries(os.path.join(destination_dir, '{}.dict.c2v'.format(dataset_name + '_' + dataset_name_ext)), hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, round(num_examples * 0.89))
+#         ## Save the dictionary file.
+#         save_dictionaries(os.path.join(destination_dir, '{}.dict.c2v'.format(dataset_name + '_' + dataset_name_ext)), hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, round(num_examples * 0.89))
 
-        # os.remove(os.path.join(output_dir, dataset_name + '.full.c2v'))
-        # os.remove(os.path.join(output_dir, dataset_name + '.full.shuffled.c2v'))
+#         # os.remove(os.path.join(output_dir, dataset_name + '.full.c2v'))
+#         # os.remove(os.path.join(output_dir, dataset_name + '.full.shuffled.c2v'))

@@ -1,8 +1,7 @@
 import os
 import sys
-from shutil import copy
-from utils import extract_functions_from_file, preprocess_cfile
-
+from shutil import copy, rmtree
+from projectPreprocessor.utils import *
 # Filter the C/C++ source files and copy to the Dataset folder.
 def filter_files(in_path, out_path):
     projectDirs = [name for name in os.listdir(os.path.join(in_path)) if os.path.isdir(os.path.join(in_path, name)) and name != "_temp_file_dir_"]
@@ -37,7 +36,10 @@ def split_files_into_functions_multiple(in_path, out_path, maxFileSize):
     # For each project directory, extract all C functions and save in corresponding project folder in out_path.
     for dir in projectDirs:
         i = 0
-        os.mkdir(os.path.join(out_path, dir))
+        fin_path = os.path.join(out_path, dir)
+        if os.path.exists(fin_path):
+            rmtree(fin_path)
+        os.mkdir(fin_path)
 
         for root, dirs, files in os.walk(os.path.join(in_path, dir)):
             for file in files:
