@@ -13,7 +13,7 @@
 ## **Introduction**
 * The idea of extracting paths from code to capture properties is inspired by [A general path-based representation for predicting program properties](https://doi.org/10.1145/3296979.3192412). We have extended the path-based representation to include CFG and PDG paths.
 
-* This tool is developed as part of my and [Dheeraj's](https://github.com/dheerajrox) bachelor thesis.
+* This tool is based on base tool developed as part of [Kartik](https://github.com/karthikswarna) and [Dheeraj's](https://github.com/dheerajrox) bachelor thesis.
 
 
 
@@ -140,6 +140,8 @@ The datasets we have created for our project can be found [here](https://drive.g
 
 ## **Team**
 In case of any queries or if you would like to give any suggestions, please feel free to contact:
+
+- Noble Saji Mathews (ch19b023@iittp.ac.in)
 
 - Karthik Chandra (cs17b026@iittp.ac.in) 
 

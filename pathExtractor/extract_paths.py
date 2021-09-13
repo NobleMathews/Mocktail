@@ -1,7 +1,11 @@
 import networkx as nx
+import timeout_decorator
 from pathExtractor.utils import *
 import os
 
+timeout_duration = 900
+
+@timeout_decorator.timeout(timeout_duration, use_signals=False)
 def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
         ast = nx.DiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(ast_path, "0-ast.dot")))
@@ -55,6 +59,7 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
         
     return (normalizedLabel, paths, source)
 
+@timeout_decorator.timeout(timeout_duration, use_signals=False)
 def extract_cfg_paths(source, cfg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
         cfg = nx.DiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(cfg_path, "0-cfg.dot")))
@@ -97,6 +102,7 @@ def traverse_cfg_paths(cfg, node, path, Visited, start_token = "", splitToken=Fa
 
     return child_paths
 
+@timeout_decorator.timeout(timeout_duration, use_signals=False)
 def extract_cdg_paths(source, cdg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
         cdg = nx.DiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(cdg_path, "0-cdg.dot")))
@@ -144,6 +150,7 @@ def traverse_cdg_paths(cdg, node, path, Visited, start_token = "", splitToken=Fa
 
     return child_paths
 
+@timeout_decorator.timeout(timeout_duration, use_signals=False)
 def extract_ddg_paths(source, ddg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
         ddg = nx.MultiDiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(ddg_path, "0-ddg.dot")))

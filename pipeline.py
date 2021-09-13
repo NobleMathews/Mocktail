@@ -2,7 +2,6 @@ import glob
 import math
 from pkgutil import iter_modules
 import psutil
-import multiprocess as mp
 import ray
 from projectPreprocessor.process_files import *
 from pathExtractor.generate_dataset import *
@@ -11,9 +10,6 @@ from questionary import Choice
 from pathlib import Path
 import configparser
 import questionary
-import subprocess
-import getpass
-import shlex
 import os
 from shutil import rmtree, which
 
@@ -22,16 +18,9 @@ config = configparser.ConfigParser()
 dirname = os.path.dirname(os.path.realpath(__file__))
 config.read(os.path.join(dirname, "config.ini"))
 
-@ray.remote
-class Cache:
-  def __init__(self):
-    self.cache = {}
-
-  def put(self, x, y):
-    self.cache[x] = y
-
-  def get(self, x):
-    return self.cache.get(x)
+in_path = "./1_input"
+process_path = "./2_processed"
+output_dir = "./3_output"
 
 def checks():
     # if os.getuid() == 0:
@@ -45,7 +34,7 @@ def checks():
             requirement = line.split("=")[0].strip()
             if requirement not in modules:
                 raise Exception("Missing dependency: " + requirement)
-    in_path = config['projectPreprocessor']['inPath']
+    in_path = "./1_input"
     if not Path.exists(Path(os.path.join(dirname, in_path))):
         raise Exception("Missing input directory, please update config.ini")
     if not questionary.confirm("Have you updated config with required details ?").ask():
@@ -70,8 +59,6 @@ def getFileIndices(in_path, numOfProcesses):
 
 def pre_process():
     # print({section: dict(config[section]) for section in config.sections()})
-    in_path = config['projectPreprocessor']['inPath']
-    out_path = config['projectPreprocessor']['outPath']
     outputType = config['projectPreprocessor']['outputType']
     maxFileSize = config['projectPreprocessor'].getint('maxFileSize')
 
@@ -83,9 +70,9 @@ def pre_process():
     try:
         filter_files(in_path, intermediate_path)
         if outputType == "multiple":
-            split_files_into_functions_multiple(intermediate_path, out_path, maxFileSize)
+            split_files_into_functions_multiple(intermediate_path, process_path, maxFileSize)
         elif outputType == "single":
-            split_files_into_functions_single(intermediate_path, out_path, maxFileSize)
+            split_files_into_functions_single(intermediate_path, process_path, maxFileSize)
 
     except Exception as e:
         raise Exception(e)
@@ -95,7 +82,7 @@ def pre_process():
         for filename in glob.glob("./_temp_*"):
             os.remove(filename)
 
-def process():
+def process(datasetName):
     # dot -Tpng 0-ast.dot -o 0-ast.png
     numOfProcesses = psutil.cpu_count()
     num_cpus = psutil.cpu_count(logical=False)
@@ -104,8 +91,6 @@ def process():
     # 
     ray.init(num_cpus=num_cpus)
 
-    in_path = config['pathExtractor']['inputPath']
-    datasetName = config['pathExtractor']['datasetName']
     # numOfProcesses = config['pathExtractor'].getint('numOfProcesses')
     maxPathContexts = config['pathExtractor'].getint('maxPathContexts')
     maxLength = config['pathExtractor'].getint('maxLength')
@@ -121,7 +106,7 @@ def process():
     useCheckpoint = config['pathExtractor'].getboolean('useCheckpoint')
 
     # Divide the work between processes.
-    processFileIndices = getFileIndices(in_path, numOfProcesses)
+    processFileIndices = getFileIndices(os.path.join(process_path,datasetName), numOfProcesses)
 
     # This is used to track what files were processed already by each process. Used in checkpointing.
     initialCount = 0
@@ -130,11 +115,11 @@ def process():
         checkpointDict[processIndex] = set()
 
     # If the output files already exist, either use it as a checkpoint or don't continue the execution.
-    if os.path.isfile(os.path.join(datasetName + ".c2v")):
+    if os.path.isfile(os.path.join(process_path, datasetName + ".c2v")):
         if useCheckpoint:
             print(datasetName + ".c2v file exists. Using it as a checkpoint ...")
             
-            with open(os.path.join(datasetName + ".c2v"), 'r') as f:
+            with open(os.path.join(process_path, datasetName + ".c2v"), 'r') as f:
                 for line in f:
                     if line.startswith("file:"):
                         fileIndex = int(line.strip('file:.c\n\t '))
@@ -149,11 +134,8 @@ def process():
             print(datasetName + ".c2v file already exist. Exiting ...")
             sys.exit()
 
-    global_cache = Cache.remote()
-    global_cache.put.remote("i",initialCount)
-
     # Create the argument collection, where each element contains the array of parameters for each process.
-    ProcessArguments = ([in_path, datasetName] + FileIndices + [checkpointDict[processIndex]] + [global_cache] + [maxPathContexts, maxLength, maxWidth, maxTreeSize, maxFileSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses] for processIndex, FileIndices in enumerate(processFileIndices))
+    ProcessArguments = ([process_path, datasetName] + FileIndices + [checkpointDict[processIndex]] + [maxPathContexts, maxLength, maxWidth, maxTreeSize, maxFileSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses] for processIndex, FileIndices in enumerate(processFileIndices))
 
     # # Start executing multiple processes.
     # with mp.Pool(processes = numOfProcesses) as pool:
@@ -161,27 +143,18 @@ def process():
 
     ray.get([generate_dataset.remote(x) for x in ProcessArguments])
 
-def post_process():
+def post_process(options):
     hash_to_string_dict = {}
     token_freq_dict = {}
     path_freq_dict = {}
     target_freq_dict = {}
 
-    include_paths = {'ast':False, 'cfg':False, 'cdg':False, 'ddg':False}
+    include_paths = {'ast':"AST" in options, 'cfg':"CFG" in options, 'cdg':"CDG" in options, 'ddg':"DDG" in options}
     max_path_count = {'ast':0, 'cfg':0, 'cdg':0, 'ddg':0}
-
-    input_dir = config['outputFormatter']['inputDirectory']
-    datasets = config['outputFormatter']['datasets']
-    datasets = [dataset.strip() for dataset in datasets.split(',')]
-    output_dir = config['outputFormatter']['outputDirectory']
-    dataset_name_ext = config['outputFormatter']['datasetNameExtension']
+    dataset_name_ext = '_'.join(options)
+    datasets = [f.name for f in os.scandir("./2_processed") if f.is_dir()]
     not_include_methods = config['outputFormatter']['notIncludeMethods']
     not_include_methods = [method.strip() for method in not_include_methods.split(',')]
-
-    include_paths['ast'] = config['outputFormatter'].getboolean('includeASTPaths')
-    include_paths['cfg'] = config['outputFormatter'].getboolean('includeCFGPaths')
-    include_paths['cdg'] = config['outputFormatter'].getboolean('includeCDGPaths')
-    include_paths['ddg'] = config['outputFormatter'].getboolean('includeDDGPaths')
 
     max_path_count['ast'] = config['outputFormatter'].getint('maxASTPaths')
     max_path_count['cfg'] = config['outputFormatter'].getint('maxCFGPaths')
@@ -191,7 +164,7 @@ def post_process():
     ## For normal Train-Test-Val split.
     for dataset_name in datasets:
         destination_dir = os.path.join(output_dir, dataset_name, dataset_name_ext)
-        data_path = os.path.join(input_dir, dataset_name + ".c2v")
+        data_path = os.path.join(process_path, dataset_name + ".c2v")
         os.makedirs(destination_dir, exist_ok=True)
 
         ## Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
@@ -217,7 +190,6 @@ def post_process():
         ## Save the dictionary file.
         save_dictionaries(os.path.join(destination_dir, '{}.dict.c2v'.format(dataset_name + '_' + dataset_name_ext)), hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, round(num_examples * 0.89))
 
-
 if __name__ == "__main__":
     try:
         checks()
@@ -232,6 +204,13 @@ if __name__ == "__main__":
     if "Preprocess project" in joblist:
         pre_process()
     if "Path extraction" in joblist:
-        process()
+        for f in os.scandir("./2_processed"):
+            if f.is_dir():
+                process(f.name)
     if "Format output" in joblist:
-        post_process()
+
+        include_paths = questionary.checkbox(
+        "Select paths to include",
+        choices=[Choice("AST", checked=True), Choice("CFG", checked=True), Choice("CDG", checked=False), Choice("DDG", checked=True)],
+        ).ask()
+        post_process(include_paths)
