@@ -148,3 +148,6 @@ In case of any queries or if you would like to give any suggestions, please feel
 - Dheeraj Vagavolu (cs17b028@iittp.ac.in) 
 
 - Sridhar Chimalakonda (ch@iittp.ac.in)
+
+find .  -maxdepth 2 -type d -name java -exec rm -r {} +
+find . -mindepth 2 -type f -print -exec mv {} . \;
