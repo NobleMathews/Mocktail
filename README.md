@@ -1,4 +1,4 @@
-# <div align="center">**Path Extractor for C**</div>
+# <div align="center">**Mocktail ++**</div>
 
 ## **Contents**
   * [Introduction](#introduction)
