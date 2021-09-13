@@ -17,7 +17,7 @@ def generate_dataset(params):
         os.makedirs(os.path.join(workingDir, "workspace"))
 
     if not os.path.exists(os.path.join(workingDir, "outdir")):
-            os.mkdir(os.path.join(workingDir, "outdir"))
+        os.mkdir(os.path.join(workingDir, "outdir"))
 
     # Process each file in the dataset one-by-one.
     for fileIndex in range(startIndex, endIndex + 1):
@@ -27,7 +27,8 @@ def generate_dataset(params):
 
         # Create environment for joern.
         file_name = str(fileIndex) + ".c"
-        in_file_path = os.path.join(in_path, file_name)
+        in_file_path = os.path.join(in_path, datasetName, file_name)
+
         # If the file is not in dataset, continue.
         if not os.path.isfile(in_file_path):
             continue
@@ -47,6 +48,9 @@ def generate_dataset(params):
         os.chdir("..")
 
         # Extract paths from AST, CFG, DDG, CDG.
+        label = None
+        ast_paths = []
+        source = None
         try:
             label, ast_paths, source = extract_ast_paths(os.path.relpath(os.path.join(workingDir, "outdir", "ast")), maxLength, maxWidth, maxTreeSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
         except TimeoutError:

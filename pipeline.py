@@ -115,11 +115,11 @@ def process(datasetName):
         checkpointDict[processIndex] = set()
 
     # If the output files already exist, either use it as a checkpoint or don't continue the execution.
-    if os.path.isfile(os.path.join(process_path, datasetName + ".c2v")):
+    if os.path.isfile(os.path.join(process_path, datasetName, datasetName + ".c2v")):
         if useCheckpoint:
             print(datasetName + ".c2v file exists. Using it as a checkpoint ...")
             
-            with open(os.path.join(process_path, datasetName + ".c2v"), 'r') as f:
+            with open(os.path.join(process_path, datasetName, datasetName + ".c2v"), 'r') as f:
                 for line in f:
                     if line.startswith("file:"):
                         fileIndex = int(line.strip('file:.c\n\t '))
@@ -140,7 +140,6 @@ def process(datasetName):
     # # Start executing multiple processes.
     # with mp.Pool(processes = numOfProcesses) as pool:
     #     pool.map(generate_dataset, ProcessArguments)
-
     ray.get([generate_dataset.remote(x) for x in ProcessArguments])
 
 def post_process(options):
@@ -164,7 +163,7 @@ def post_process(options):
     ## For normal Train-Test-Val split.
     for dataset_name in datasets:
         destination_dir = os.path.join(output_dir, dataset_name, dataset_name_ext)
-        data_path = os.path.join(process_path, dataset_name + ".c2v")
+        data_path = os.path.join(process_path, dataset_name, dataset_name + ".c2v")
         os.makedirs(destination_dir, exist_ok=True)
 
         ## Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
@@ -200,7 +199,10 @@ if __name__ == "__main__":
         choices=[Choice("Preprocess project", checked=True), Choice("Path extraction", checked=True),
                  Choice("Format output", checked=True)],
     ).ask()
-    # print(joblist)
+    include_paths = questionary.checkbox(
+        "Select paths to include",
+        choices=[Choice("AST", checked=True), Choice("CFG", checked=True), Choice("CDG", checked=False), Choice("DDG", checked=True)],
+    ).ask()
     if "Preprocess project" in joblist:
         pre_process()
     if "Path extraction" in joblist:
@@ -208,9 +210,4 @@ if __name__ == "__main__":
             if f.is_dir():
                 process(f.name)
     if "Format output" in joblist:
-
-        include_paths = questionary.checkbox(
-        "Select paths to include",
-        choices=[Choice("AST", checked=True), Choice("CFG", checked=True), Choice("CDG", checked=False), Choice("DDG", checked=True)],
-        ).ask()
         post_process(include_paths)
