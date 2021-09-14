@@ -10,10 +10,10 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     try:
         ast = nx.DiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(ast_path, "0-ast.dot")))
     except:
-        return ("", [])
+        return ("", [], "")
 
     if (ast.number_of_nodes() > maxTreeSize or ast.number_of_nodes() == 0):
-        return ("", [])
+        return ("", [], "")
 
     nx.set_node_attributes(ast, [], 'pathPieces')
 

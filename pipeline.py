@@ -22,6 +22,14 @@ in_path = "./1_input"
 process_path = "./2_processed"
 output_dir = "./3_output"
 
+# dot -Tpng 0-ast.dot -o 0-ast.png
+numOfProcesses = psutil.cpu_count()
+num_cpus = psutil.cpu_count(logical=False)
+# [TODO] if too low
+# numOfProcesses = num_cpus
+# 
+ray.init(num_cpus=num_cpus)
+
 def checks():
     # if os.getuid() == 0:
         #     raise Exception("This program requires to be run as root but was called by " + getpass.getuser())
@@ -83,14 +91,6 @@ def pre_process():
             os.remove(filename)
 
 def process(datasetName):
-    # dot -Tpng 0-ast.dot -o 0-ast.png
-    numOfProcesses = psutil.cpu_count()
-    num_cpus = psutil.cpu_count(logical=False)
-    # 
-    numOfProcesses = num_cpus
-    # 
-    ray.init(num_cpus=num_cpus)
-
     # numOfProcesses = config['pathExtractor'].getint('numOfProcesses')
     maxPathContexts = config['pathExtractor'].getint('maxPathContexts')
     maxLength = config['pathExtractor'].getint('maxLength')

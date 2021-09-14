@@ -151,3 +151,4 @@ In case of any queries or if you would like to give any suggestions, please feel
 
 find .  -maxdepth 2 -type d -name java -exec rm -r {} +
 find . -mindepth 2 -type f -print -exec mv {} . \;
+find . -name '.DS_Store' -type f -delete
