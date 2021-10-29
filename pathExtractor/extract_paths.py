@@ -17,53 +17,56 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
 
     nx.set_node_attributes(ast, [], 'pathPieces')
 
-    source = "1000101" if "1000101" in ast else min(ast.nodes)
+    # source = "1000101" if "1000101" in ast else min(ast.nodes)
     source_nodes = [node for node, indegree in ast.in_degree(ast.nodes()) if indegree == 0]
-    if len(source_nodes)>0:
-        source = source_nodes[0]
-    postOrder = list(nx.dfs_postorder_nodes(ast, source=source))
+    # if len(source_nodes)>0:
+    #     source = source_nodes[0]
 
-    normalizedLabel = normalizeAst(ast, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
+    paths = []
+    for source in source_nodes:    
+        postOrder = list(nx.dfs_postorder_nodes(ast, source=source))
 
-    paths = []    
-    for currentNode in postOrder:
-        if not list(ast.successors(currentNode)):    # List is empty i.e node is leaf
-            attributes = ast.nodes[currentNode]['label'][2:-2].split(',')
-            attributes = [attr.strip() for attr in attributes]
-            if len(attributes) > 1 and attributes[1]:  # attribute[1] is token of the leaf node. If the token is not empty.
-                ast.nodes[currentNode]['pathPieces'] = [[currentNode]]
-        else:
-            # Creates a list of pathPieces per child i.e. list(list(list(nodes))) <--> list(list(pathPieces)) <--> list(PathPieces per child)
-            pathPiecesPerChild = list(map(lambda x: ast.nodes[x]['pathPieces'], list(ast.successors(currentNode))))
+        normalizedLabel = normalizeAst(ast, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
 
-            # Append current node to all the pathPieces. And flatten the list(list(pathPieces)) to list(pathPieces).
-            currentNodePathPieces = [pathPiece + [currentNode] for pathPieceList in pathPiecesPerChild for pathPiece in pathPieceList if maxLength == None or len(pathPiece) <= maxLength]            
-            ast.nodes[currentNode]['pathPieces'] = currentNodePathPieces
-            
-            # Find list of paths that pass through the current node (leaf -> currentNode -> leaf). Also, filter as per maxWidth and maxLength
-            for index, leftChildsPieces in enumerate(pathPiecesPerChild):
-                if maxWidth is None:
-                    maxIndex = len(pathPiecesPerChild)
-                else:
-                    maxIndex = min(index + maxWidth + 1, len(pathPiecesPerChild))
+        for currentNode in postOrder:
+            if not list(ast.successors(currentNode)):    # List is empty i.e node is leaf
+                attributes = ast.nodes[currentNode]['label'][2:-2].split(',')
+                attributes = [attr.strip() for attr in attributes]
+                if len(attributes) > 1 and attributes[1]:  # attribute[1] is token of the leaf node. If the token is not empty.
+                    ast.nodes[currentNode]['pathPieces'] = [[currentNode]]
+            else:
+                # Creates a list of pathPieces per child i.e. list(list(list(nodes))) <--> list(list(pathPieces)) <--> list(PathPieces per child)
+                pathPiecesPerChild = list(map(lambda x: ast.nodes[x]['pathPieces'], list(ast.successors(currentNode))))
+
+                # Append current node to all the pathPieces. And flatten the list(list(pathPieces)) to list(pathPieces).
+                currentNodePathPieces = [pathPiece + [currentNode] for pathPieceList in pathPiecesPerChild for pathPiece in pathPieceList if maxLength == None or len(pathPiece) <= maxLength]            
+                ast.nodes[currentNode]['pathPieces'] = currentNodePathPieces
                 
-                for rightChildsPieces in pathPiecesPerChild[index + 1 : maxIndex]:
-                    for upPiece in leftChildsPieces:
-                        for downPiece in rightChildsPieces:
-                            if ((maxLength == None) or (len(upPiece) + 1 + len(downPiece) <= maxLength)):
-                                paths.append(toPathContext(ast, upPiece, currentNode, downPiece, upSymbol, downSymbol))
+                # Find list of paths that pass through the current node (leaf -> currentNode -> leaf). Also, filter as per maxWidth and maxLength
+                for index, leftChildsPieces in enumerate(pathPiecesPerChild):
+                    if maxWidth is None:
+                        maxIndex = len(pathPiecesPerChild)
+                    else:
+                        maxIndex = min(index + maxWidth + 1, len(pathPiecesPerChild))
+                    
+                    for rightChildsPieces in pathPiecesPerChild[index + 1 : maxIndex]:
+                        for upPiece in leftChildsPieces:
+                            for downPiece in rightChildsPieces:
+                                if ((maxLength == None) or (len(upPiece) + 1 + len(downPiece) <= maxLength)):
+                                    paths.append(toPathContext(ast, upPiece, currentNode, downPiece, upSymbol, downSymbol))
 
     # print('\n')
     # for path in paths:
     #     print(path)
         
-    return (normalizedLabel, paths, source)
+    return (normalizedLabel, paths, source_nodes)
 
 @timeout_decorator.timeout(timeout_duration, use_signals=False)
-def extract_cfg_paths(source, cfg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
+def     extract_cfg_paths(source, cfg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
         cfg = nx.DiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(cfg_path, "0-cfg.dot")))
-        # source = "1000101" if "1000101" in cfg else min(cfg.nodes)
+        # if not source in cfg:
+            # source = "1000101" if "1000101" in cfg else min(cfg.nodes)
 
     except:
         return []
@@ -154,7 +157,8 @@ def traverse_cdg_paths(cdg, node, path, Visited, start_token = "", splitToken=Fa
 def extract_ddg_paths(source, ddg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
         ddg = nx.MultiDiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(ddg_path, "0-ddg.dot")))
-        # source = "1000101" if "1000101" in ddg else min(ddg.nodes)
+        if not source in ddg:
+            source = "1000101" if "1000101" in ddg else min(ddg.nodes)
     except:
         return []
 

@@ -88,7 +88,7 @@ def pre_process():
     finally:
         rmtree(intermediate_path)
         for filename in glob.glob("./_temp_*"):
-            os.remove(filename)
+            rmtree(filename)
 
 def process(datasetName):
     # numOfProcesses = config['pathExtractor'].getint('numOfProcesses')

@@ -50,9 +50,9 @@ def generate_dataset(params):
         # Extract paths from AST, CFG, DDG, CDG.
         label = None
         ast_paths = []
-        source = None
+        source_nodes = []
         try:
-            label, ast_paths, source = extract_ast_paths(os.path.relpath(os.path.join(workingDir, "outdir", "ast")), maxLength, maxWidth, maxTreeSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
+            label, ast_paths, source_nodes = extract_ast_paths(os.path.relpath(os.path.join(workingDir, "outdir", "ast")), maxLength, maxWidth, maxTreeSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
         except TimeoutError:
             print(workingDir)
         else:
@@ -66,9 +66,10 @@ def generate_dataset(params):
 
             cfg_paths, cdg_paths, ddg_paths  = ([] for i in range(3))
             try:
-                cfg_paths = extract_cfg_paths(source, os.path.relpath(os.path.join(workingDir, "outdir", "cfg")), splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
-                cdg_paths = extract_cdg_paths(source, os.path.relpath(os.path.join(workingDir, "outdir", "cdg")), splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
-                ddg_paths = extract_ddg_paths(source, os.path.relpath(os.path.join(workingDir, "outdir", "ddg")), splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
+                for source in source_nodes:
+                    cfg_paths.extend(extract_cfg_paths(source, os.path.relpath(os.path.join(workingDir, "outdir", "cfg")), splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses))
+                    cdg_paths.extend(extract_cdg_paths(source, os.path.relpath(os.path.join(workingDir, "outdir", "cdg")), splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses))
+                    ddg_paths.extend(extract_ddg_paths(source, os.path.relpath(os.path.join(workingDir, "outdir", "ddg")), splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses))
             except TimeoutError:
                 print(workingDir)
             # Select maxPathContexts number of path contexts randomly.
