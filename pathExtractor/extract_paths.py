@@ -74,20 +74,26 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
 
 
 @timeout_decorator.timeout(timeout_duration, use_signals=False)
-def extract_cfg_paths(source, cfg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
+def extract_cfg_paths(cfg_path, source_nodes, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
                       labelPlaceholder='<SELF>', useParentheses=True):
     try:
         cfg = nx.DiGraph(nx.drawing.nx_pydot.read_dot(cfg_path))
-        if source not in cfg:
-            source = min(cfg.nodes)
+        # selected_nodes = []
+        # for source in source_nodes:
+        #     if source in cfg.nodes():
+        #         selected_nodes.append(source)
+        # if not selected_nodes:
+        #     selected_nodes.append(min(cfg.nodes))
+        source = min(cfg.nodes)
 
     except:
         return []
 
     paths = []
     Visited = []
-    paths = traverse_cfg_paths(cfg, source, paths.copy(), Visited.copy(), "", splitToken, separator, upSymbol,
-                               downSymbol, labelPlaceholder, useParentheses)
+    # for source in selected_nodes:
+    paths.extend(traverse_cfg_paths(cfg, source, paths.copy(), Visited.copy(), "", splitToken, separator, upSymbol,
+                               downSymbol, labelPlaceholder, useParentheses))
 
     # print('\ncfg:')
     # for path in paths:
@@ -178,12 +184,11 @@ def traverse_cdg_paths(cdg, node, path, Visited, start_token="", splitToken=Fals
 
 
 @timeout_decorator.timeout(timeout_duration, use_signals=False)
-def extract_ddg_paths(source, ddg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
+def extract_ddg_paths(ddg_path, source = "1000101", splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
                       labelPlaceholder='<SELF>', useParentheses=True):
     try:
         ddg = nx.MultiDiGraph(nx.drawing.nx_pydot.read_dot(ddg_path))
-        if source not in cfg:
-            source = min(ddg.nodes)
+        source = min(ddg.nodes)
     except:
         return []
 

@@ -5,6 +5,7 @@ def store_paths(label, file_name, datasetName, ast_paths, cfg_paths, cdg_paths, 
     with FileLock(os.path.join("./2_processed", datasetName, datasetName + ".c2v.lock")):
         with open(os.path.join("./2_processed", datasetName, datasetName + ".c2v"), 'a', encoding="utf-8") as f:
             # f.write("#" + str(i) + '\n')
+            # label
             f.write("label:" + label + '\n')
             f.write("file:" + file_name + '\n')
             f.write("path: ast\n")
