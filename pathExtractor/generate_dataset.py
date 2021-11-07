@@ -89,19 +89,26 @@ def generate_dataset(params):
             cdg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cdg"))
             ddg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ddg"))
             try:
+                # source node not passed anymore [TODO] do i need to check indegree 0 when passing
                 for source in source_nodes:
-                    cfg_paths.extend(
-                        extract_cfg_paths(source, os.path.relpath(os.path.join(workingDir, "outdir", "cfg")),
-                                          splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
-                                          useParentheses))
-                    ddg_paths.extend(
-                        extract_ddg_paths(source, os.path.relpath(os.path.join(workingDir, "outdir", "ddg")),
-                                          splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
-                                          useParentheses))
-                cdg_paths.extend(
-                    extract_cdg_paths(os.path.relpath(os.path.join(workingDir, "outdir", "cdg")),
-                                      splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
-                                      useParentheses))
+                    for cfg_file in os.listdir(ast_path_s):
+                        if cfg_file.endswith(".dot"):
+                            cfg_paths.extend(
+                                extract_cfg_paths(source, os.path.join(cfg_path_s, cfg_file),
+                                                  splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
+                                                  useParentheses))
+                    for ddg_file in os.listdir(ast_path_s):
+                        if ddg_file.endswith(".dot"):
+                            ddg_paths.extend(
+                                extract_ddg_paths(source, os.path.join(ddg_path_s, ddg_file),
+                                                  splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
+                                                  useParentheses))
+                for cdg_file in os.listdir(ast_path_s):
+                    if cdg_file.endswith(".dot"):
+                        cdg_paths.extend(
+                            extract_cdg_paths(os.path.join(cdg_path_s, cdg_file),
+                                              splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
+                                              useParentheses))
             except TimeoutError:
                 print(workingDir)
             # Select maxPathContexts number of path contexts randomly.
