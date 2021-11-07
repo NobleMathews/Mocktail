@@ -88,7 +88,6 @@ def pre_process():
 
 
 def process(datasetName):
-    # numOfProcesses = config['pathExtractor'].getint('numOfProcesses')
     maxPathContexts = config['pathExtractor'].getint('maxPathContexts')
     maxLength = config['pathExtractor'].getint('maxLength')
     maxWidth = config['pathExtractor'].getint('maxWidth')
@@ -101,6 +100,7 @@ def process(datasetName):
     labelPlaceholder = config['pathExtractor']['labelPlaceholder']
     useParentheses = config['pathExtractor'].getboolean('useParentheses')
     useCheckpoint = config['pathExtractor'].getboolean('useCheckpoint')
+    outputType = config['projectPreprocessor']['outputType']
 
     # Divide the work between processes.
     processFileIndices = getFileIndices(os.path.join(process_path, datasetName), numOfProcesses)
@@ -133,7 +133,7 @@ def process(datasetName):
 
     # Create the argument collection, where each element contains the array of parameters for each process.
     ProcessArguments = (
-        [process_path, datasetName] + [FileIndices] + [checkpointDict[processIndex]] + [maxPathContexts, maxLength,
+        [process_path, datasetName, outputType] + [FileIndices] + [checkpointDict[processIndex]] + [maxPathContexts, maxLength,
                                                                                       maxWidth,
                                                                                       maxTreeSize, maxFileSize,
                                                                                       splitToken,

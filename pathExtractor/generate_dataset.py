@@ -14,7 +14,7 @@ def repl(m):
 
 @ray.remote
 def generate_dataset(params):
-    in_path, datasetName, fileIndices, checkpointSet, \
+    in_path, datasetName, outputType, fileIndices, checkpointSet, \
     maxPathContexts, maxLength, maxWidth, maxTreeSize, maxFileSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses = params
 
     # Create temporary working directories.
@@ -127,6 +127,8 @@ def generate_dataset(params):
             #     ddg_paths.append(("<NULL/>", "<NULL/>", "<NULL/>"))
 
             # Storing the extracted paths in files.
+            if outputType is "file":
+                label = datasetName
             store_paths(label, file_name, datasetName, ast_paths, cfg_paths, cdg_paths, ddg_paths)
 
         # Remove the current file, and ast, cfg, pdg folder after processing current sample. Otherwise, joern will bail out. 
