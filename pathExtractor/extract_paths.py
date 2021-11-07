@@ -79,8 +79,7 @@ def extract_cfg_paths(source, cfg_path, splitToken=False, separator='|', upSymbo
     try:
         cfg = nx.DiGraph(nx.drawing.nx_pydot.read_dot(cfg_path))
         if source not in cfg:
-            return []
-            # source = "1000101" if "1000101" in cfg else min(cfg.nodes)
+            source = min(cfg.nodes)
 
     except:
         return []
@@ -183,8 +182,8 @@ def extract_ddg_paths(source, ddg_path, splitToken=False, separator='|', upSymbo
                       labelPlaceholder='<SELF>', useParentheses=True):
     try:
         ddg = nx.MultiDiGraph(nx.drawing.nx_pydot.read_dot(ddg_path))
-        if not source in ddg:
-            return []
+        if source not in cfg:
+            source = min(ddg.nodes)
     except:
         return []
 
