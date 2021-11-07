@@ -145,6 +145,7 @@ def process(datasetName):
     # # Start executing multiple processes.
     # with mp.Pool(processes = numOfProcesses) as pool:
     #     pool.map(generate_dataset, ProcessArguments)
+
     ray.get([generate_dataset.remote(x) for x in ProcessArguments])
 
 

@@ -34,10 +34,10 @@ def generate_dataset(params):
         file_name = fileIndex
         in_file_path = os.path.join(in_path, datasetName, file_name)
 
-        # If the file is not in dataset as a c file, continue.
-        if not os.path.isfile(in_file_path):
-            continue
-
+        # # If the file is not in dataset as a c file, continue.
+        # if not os.path.isfile(in_file_path):
+        #     continue
+        #
         # Filter files as per the max size requirement.
         statinfo = os.stat(in_file_path)
         if statinfo.st_size > maxFileSize:
@@ -58,7 +58,6 @@ def generate_dataset(params):
                     f.seek(0)
                     f.write(result)
         os.chdir("..")
-
         # Extract paths from AST, CFG, DDG, CDG.
         label = None
         ast_paths = []
@@ -76,7 +75,7 @@ def generate_dataset(params):
         except TimeoutError:
             print(workingDir)
         else:
-            # If no paths are generated, Reset and continue. 
+            # If no paths are generated, Reset and continue.
             if not ast_paths or label == None or label == "":
                 print(workingDir, file_name, "no paths!!!")
                 os.remove(os.path.join(workingDir, "workspace", file_name))
@@ -89,20 +88,20 @@ def generate_dataset(params):
             cdg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cdg"))
             ddg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ddg"))
             try:
-                # source node not passed anymore [TODO] do i need to check indegree 0 when passing
-                for source in source_nodes:
-                    for cfg_file in os.listdir(cfg_path_s):
-                        if cfg_file.endswith(".dot"):
-                            cfg_paths.extend(
-                                extract_cfg_paths(source, os.path.join(cfg_path_s, cfg_file),
-                                                  splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
-                                                  useParentheses))
-                    for ddg_file in os.listdir(ddg_path_s):
-                        if ddg_file.endswith(".dot"):
-                            ddg_paths.extend(
-                                extract_ddg_paths(source, os.path.join(ddg_path_s, ddg_file),
-                                                  splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
-                                                  useParentheses))
+                source = "1000101"
+                # for source in source_nodes:
+                for cfg_file in os.listdir(cfg_path_s):
+                    if cfg_file.endswith(".dot"):
+                        cfg_paths.extend(
+                            extract_cfg_paths(os.path.join(cfg_path_s, cfg_file), source_nodes,
+                                              splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
+                                              useParentheses))
+                for ddg_file in os.listdir(ddg_path_s):
+                    if ddg_file.endswith(".dot"):
+                        ddg_paths.extend(
+                            extract_ddg_paths(os.path.join(ddg_path_s, ddg_file), source,
+                                              splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
+                                              useParentheses))
                 for cdg_file in os.listdir(cdg_path_s):
                     if cdg_file.endswith(".dot"):
                         cdg_paths.extend(
