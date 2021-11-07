@@ -25,19 +25,17 @@ output_dir = "./3_output"
 # dot -Tpng 0-ast.dot -o 0-ast.png
 numOfProcesses = psutil.cpu_count()
 num_cpus = psutil.cpu_count(logical=False)
-# [TODO] if too low
-# numOfProcesses = num_cpus
-# 
 ray.init(num_cpus=num_cpus)
+
 
 def checks():
     # if os.getuid() == 0:
-        #     raise Exception("This program requires to be run as root but was called by " + getpass.getuser())
+    #     raise Exception("This program requires to be run as root but was called by " + getpass.getuser())
     for dependency in ["joern", "terashuf"]:
         if which(dependency) is None:
             raise Exception("Check whether " + dependency + " is on PATH and marked as executable.")
     modules = set(x[1] for x in iter_modules())
-    with open(os.path.join(dirname,'./requirements.txt'), 'r') as f:
+    with open(os.path.join(dirname, './requirements.txt'), 'r') as f:
         for line in f:
             requirement = line.split("=")[0].strip()
             if requirement not in modules:
@@ -48,22 +46,18 @@ def checks():
     if not questionary.confirm("Have you updated config with required details ?").ask():
         raise Exception("Please update and confirm config file contents")
 
+def divide(lst, n):
+    p = len(lst) // n
+    if len(lst)-p > 0:
+        return [lst[:p]] + divide(lst[p:], n-1)
+    else:
+        return [lst]
+
 def getFileIndices(in_path, numOfProcesses):
     # Divide the work between processes.
-    totalFiles = len(os.listdir(in_path))
-    filesPerProcess = math.floor(totalFiles / numOfProcesses)
-    leftOver = totalFiles % numOfProcesses
+    totalFiles = os.listdir(in_path)
+    return divide(totalFiles, numOfProcesses)
 
-    # Calculate the start and end file indices for each process.
-    processFileIndices = []
-    for processIndex in range(numOfProcesses):
-        startIndex = filesPerProcess * processIndex
-        endIndex = startIndex + filesPerProcess - 1
-        if processIndex == numOfProcesses - 1:
-            endIndex += leftOver
-        processFileIndices.append([startIndex, endIndex])
-
-    return processFileIndices
 
 def pre_process():
     # print({section: dict(config[section]) for section in config.sections()})
@@ -81,6 +75,8 @@ def pre_process():
             split_files_into_functions_multiple(intermediate_path, process_path, maxFileSize)
         elif outputType == "single":
             split_files_into_functions_single(intermediate_path, process_path, maxFileSize)
+        elif outputType == "file":
+            filter_files(in_path, process_path)
 
     except Exception as e:
         raise Exception(e)
@@ -89,6 +85,7 @@ def pre_process():
         rmtree(intermediate_path)
         for filename in glob.glob("./_temp_*"):
             rmtree(filename)
+
 
 def process(datasetName):
     # numOfProcesses = config['pathExtractor'].getint('numOfProcesses')
@@ -106,7 +103,7 @@ def process(datasetName):
     useCheckpoint = config['pathExtractor'].getboolean('useCheckpoint')
 
     # Divide the work between processes.
-    processFileIndices = getFileIndices(os.path.join(process_path,datasetName), numOfProcesses)
+    processFileIndices = getFileIndices(os.path.join(process_path, datasetName), numOfProcesses)
 
     # This is used to track what files were processed already by each process. Used in checkpointing.
     initialCount = 0
@@ -118,13 +115,13 @@ def process(datasetName):
     if os.path.isfile(os.path.join(process_path, datasetName, datasetName + ".c2v")):
         if useCheckpoint:
             print(datasetName + ".c2v file exists. Using it as a checkpoint ...")
-            
+
             with open(os.path.join(process_path, datasetName, datasetName + ".c2v"), 'r') as f:
                 for line in f:
                     if line.startswith("file:"):
-                        fileIndex = int(line.strip('file:.c\n\t '))
+                        fileIndex = line.strip('file:\n\t ')
                         for processIndex, filesRange in enumerate(processFileIndices):
-                            if fileIndex >= filesRange[0] and fileIndex <= filesRange[1]:
+                            if fileIndex in filesRange:
                                 checkpointDict[processIndex].add(fileIndex)
                                 initialCount += 1
                                 break
@@ -135,12 +132,21 @@ def process(datasetName):
             sys.exit()
 
     # Create the argument collection, where each element contains the array of parameters for each process.
-    ProcessArguments = ([process_path, datasetName] + FileIndices + [checkpointDict[processIndex]] + [maxPathContexts, maxLength, maxWidth, maxTreeSize, maxFileSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses] for processIndex, FileIndices in enumerate(processFileIndices))
+    ProcessArguments = (
+        [process_path, datasetName] + [FileIndices] + [checkpointDict[processIndex]] + [maxPathContexts, maxLength,
+                                                                                      maxWidth,
+                                                                                      maxTreeSize, maxFileSize,
+                                                                                      splitToken,
+                                                                                      separator, upSymbol, downSymbol,
+                                                                                      labelPlaceholder, useParentheses]
+    for
+        processIndex, FileIndices in enumerate(processFileIndices))
 
     # # Start executing multiple processes.
     # with mp.Pool(processes = numOfProcesses) as pool:
     #     pool.map(generate_dataset, ProcessArguments)
     ray.get([generate_dataset.remote(x) for x in ProcessArguments])
+
 
 def post_process(options):
     hash_to_string_dict = {}
@@ -148,8 +154,8 @@ def post_process(options):
     path_freq_dict = {}
     target_freq_dict = {}
 
-    include_paths = {'ast':"AST" in options, 'cfg':"CFG" in options, 'cdg':"CDG" in options, 'ddg':"DDG" in options}
-    max_path_count = {'ast':0, 'cfg':0, 'cdg':0, 'ddg':0}
+    include_paths = {'ast': "AST" in options, 'cfg': "CFG" in options, 'cdg': "CDG" in options, 'ddg': "DDG" in options}
+    max_path_count = {'ast': 0, 'cfg': 0, 'cdg': 0, 'ddg': 0}
     dataset_name_ext = '_'.join(options)
     datasets = [f.name for f in os.scandir("./2_processed") if f.is_dir()]
     not_include_methods = config['outputFormatter']['notIncludeMethods']
@@ -167,27 +173,42 @@ def post_process(options):
         os.makedirs(destination_dir, exist_ok=True)
 
         ## Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
-        num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name, "{}.c2v".format(dataset_name + '.full')), max_path_count, not_include_methods, hash_to_string_dict)
+        num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name,
+                                                                             "{}.c2v".format(dataset_name + '.full')),
+                                                     max_path_count, not_include_methods, hash_to_string_dict)
 
         ## Shuffle the output file of above step.
         if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))):
-            print("{} already exists!".format(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))))
+            print("{} already exists!".format(
+                os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))))
         else:
-            os.system('terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(output_dir=output_dir, dataset_name=dataset_name))
+            os.system(
+                'terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(
+                    output_dir=output_dir, dataset_name=dataset_name))
 
         ## Splitting the joined and shuffled file into Train-Test-Val sets.
         split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples)
 
         ## Use "include_paths" to select specific type of paths.
-        filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
-        filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
-        filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
+        filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)),
+                     os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                     include_paths, max_path_count)
+        filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)),
+                     os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                     include_paths, max_path_count)
+        filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)),
+                     os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                     include_paths, max_path_count)
 
         ## Create dictionaries using training data.
-        create_dictionaries(os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)), token_freq_dict, path_freq_dict, target_freq_dict)
+        create_dictionaries(os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                            token_freq_dict, path_freq_dict, target_freq_dict)
 
         ## Save the dictionary file.
-        save_dictionaries(os.path.join(destination_dir, '{}.dict.c2v'.format(dataset_name + '_' + dataset_name_ext)), hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, round(num_examples * 0.89))
+        save_dictionaries(os.path.join(destination_dir, '{}.dict.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                          hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict,
+                          round(num_examples * 0.89))
+
 
 if __name__ == "__main__":
     try:
@@ -201,7 +222,8 @@ if __name__ == "__main__":
     ).ask()
     include_paths = questionary.checkbox(
         "Select paths to include",
-        choices=[Choice("AST", checked=True), Choice("CFG", checked=True), Choice("CDG", checked=False), Choice("DDG", checked=True)],
+        choices=[Choice("AST", checked=True), Choice("CFG", checked=True), Choice("CDG", checked=False),
+                 Choice("DDG", checked=True)],
     ).ask()
     if "Preprocess project" in joblist:
         pre_process()

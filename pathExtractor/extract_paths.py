@@ -1,14 +1,14 @@
 import networkx as nx
-import timeout_decorator
 from pathExtractor.utils import *
 import os
+import timeout_decorator
 
 timeout_duration = 900
 
 @timeout_decorator.timeout(timeout_duration, use_signals=False)
 def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
-        ast = nx.DiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(ast_path, "0-ast.dot")))
+        ast = nx.DiGraph(nx.drawing.nx_pydot.read_dot(ast_path))
     except:
         return ("", [], "")
 
@@ -23,7 +23,7 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     #     source = source_nodes[0]
 
     paths = []
-    for source in source_nodes:    
+    for source in source_nodes:
         postOrder = list(nx.dfs_postorder_nodes(ast, source=source))
 
         normalizedLabel = normalizeAst(ast, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
@@ -39,16 +39,16 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
                 pathPiecesPerChild = list(map(lambda x: ast.nodes[x]['pathPieces'], list(ast.successors(currentNode))))
 
                 # Append current node to all the pathPieces. And flatten the list(list(pathPieces)) to list(pathPieces).
-                currentNodePathPieces = [pathPiece + [currentNode] for pathPieceList in pathPiecesPerChild for pathPiece in pathPieceList if maxLength == None or len(pathPiece) <= maxLength]            
+                currentNodePathPieces = [pathPiece + [currentNode] for pathPieceList in pathPiecesPerChild for pathPiece in pathPieceList if maxLength == None or len(pathPiece) <= maxLength]
                 ast.nodes[currentNode]['pathPieces'] = currentNodePathPieces
-                
+
                 # Find list of paths that pass through the current node (leaf -> currentNode -> leaf). Also, filter as per maxWidth and maxLength
                 for index, leftChildsPieces in enumerate(pathPiecesPerChild):
                     if maxWidth is None:
                         maxIndex = len(pathPiecesPerChild)
                     else:
                         maxIndex = min(index + maxWidth + 1, len(pathPiecesPerChild))
-                    
+
                     for rightChildsPieces in pathPiecesPerChild[index + 1 : maxIndex]:
                         for upPiece in leftChildsPieces:
                             for downPiece in rightChildsPieces:
@@ -58,14 +58,15 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     # print('\n')
     # for path in paths:
     #     print(path)
-        
+
     return (normalizedLabel, paths, source_nodes)
 
 @timeout_decorator.timeout(timeout_duration, use_signals=False)
-def     extract_cfg_paths(source, cfg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
+def extract_cfg_paths(source, cfg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
         cfg = nx.DiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(cfg_path, "0-cfg.dot")))
-        # if not source in cfg:
+        if source not in cfg:
+            return []
             # source = "1000101" if "1000101" in cfg else min(cfg.nodes)
 
     except:
@@ -78,7 +79,7 @@ def     extract_cfg_paths(source, cfg_path, splitToken=False, separator='|', upS
     # print('\ncfg:')
     # for path in paths:
     #     print(path)
-        
+
     return paths
 
 def traverse_cfg_paths(cfg, node, path, Visited, start_token = "", splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
@@ -106,7 +107,7 @@ def traverse_cfg_paths(cfg, node, path, Visited, start_token = "", splitToken=Fa
     return child_paths
 
 @timeout_decorator.timeout(timeout_duration, use_signals=False)
-def extract_cdg_paths(source, cdg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
+def extract_cdg_paths(cdg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
         cdg = nx.DiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(cdg_path, "0-cdg.dot")))
         root = min(cdg.nodes)
@@ -115,7 +116,7 @@ def extract_cdg_paths(source, cdg_path, splitToken=False, separator='|', upSymbo
 
     if nx.is_empty(cdg):
         return []
-    
+
     # Removing self-loops and finding the root of the CDG (which is a tree, if self-loops are removed).
     # cdg.remove_edges_from(nx.selfloop_edges(cdg))
     # root = [node for node, degree in cdg.in_degree() if degree == 0]
@@ -158,7 +159,7 @@ def extract_ddg_paths(source, ddg_path, splitToken=False, separator='|', upSymbo
     try:
         ddg = nx.MultiDiGraph(nx.drawing.nx_pydot.read_dot(os.path.join(ddg_path, "0-ddg.dot")))
         if not source in ddg:
-            source = "1000101" if "1000101" in ddg else min(ddg.nodes)
+            return []
     except:
         return []
 
@@ -170,7 +171,7 @@ def extract_ddg_paths(source, ddg_path, splitToken=False, separator='|', upSymbo
     # print('\nddg:')
     # for path in paths:
     #     print(path)
-        
+
     return paths
 
 def traverse_ddg_paths(ddg, node, path, Visited, start_token = "", edge_label="", splitToken=False, separator='|', upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
