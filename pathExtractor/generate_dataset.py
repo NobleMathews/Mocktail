@@ -127,7 +127,7 @@ def generate_dataset(params):
             #     ddg_paths.append(("<NULL/>", "<NULL/>", "<NULL/>"))
 
             # Storing the extracted paths in files.
-            if outputType is "file":
+            if outputType == "file":
                 label = datasetName
             store_paths(label, file_name, datasetName, ast_paths, cfg_paths, cdg_paths, ddg_paths)
 
