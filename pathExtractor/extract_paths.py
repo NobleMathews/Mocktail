@@ -1,12 +1,9 @@
 import networkx as nx
 from pathExtractor.utils import *
 import os
-import timeout_decorator
-
-timeout_duration = 900
+import ray
 
 
-@timeout_decorator.timeout(timeout_duration, use_signals=False)
 def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitToken=False, separator='|', upSymbol='↑',
                       downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     try:
@@ -73,7 +70,6 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     return (normalizedLabel, paths, source_nodes)
 
 
-@timeout_decorator.timeout(timeout_duration, use_signals=False)
 def extract_cfg_paths(cfg_path, source_nodes, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
                       labelPlaceholder='<SELF>', useParentheses=True):
     try:
@@ -93,7 +89,7 @@ def extract_cfg_paths(cfg_path, source_nodes, splitToken=False, separator='|', u
     Visited = []
     # for source in selected_nodes:
     paths.extend(traverse_cfg_paths(cfg, source, paths.copy(), Visited.copy(), "", splitToken, separator, upSymbol,
-                               downSymbol, labelPlaceholder, useParentheses))
+                                    downSymbol, labelPlaceholder, useParentheses))
 
     # print('\ncfg:')
     # for path in paths:
@@ -129,7 +125,6 @@ def traverse_cfg_paths(cfg, node, path, Visited, start_token="", splitToken=Fals
     return child_paths
 
 
-@timeout_decorator.timeout(timeout_duration, use_signals=False)
 def extract_cdg_paths(cdg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
                       labelPlaceholder='<SELF>', useParentheses=True):
     try:
@@ -183,8 +178,7 @@ def traverse_cdg_paths(cdg, node, path, Visited, start_token="", splitToken=Fals
     return child_paths
 
 
-@timeout_decorator.timeout(timeout_duration, use_signals=False)
-def extract_ddg_paths(ddg_path, source = "1000101", splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
+def extract_ddg_paths(ddg_path, source="1000101", splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
                       labelPlaceholder='<SELF>', useParentheses=True):
     try:
         ddg = nx.MultiDiGraph(nx.drawing.nx_pydot.read_dot(ddg_path))

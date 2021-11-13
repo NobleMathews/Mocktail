@@ -13,6 +13,7 @@ import questionary
 import os
 from shutil import rmtree, which
 
+# find . -name '*.txt' -exec sh -c 'mv "$0" "${0%.txt}.c"' {} \;
 # Reading the configuration parameters from config.ini file.
 config = configparser.ConfigParser()
 dirname = os.path.dirname(os.path.realpath(__file__))
@@ -46,12 +47,14 @@ def checks():
     if not questionary.confirm("Have you updated config with required details ?").ask():
         raise Exception("Please update and confirm config file contents")
 
+
 def divide(lst, n):
     p = len(lst) // n
-    if len(lst)-p > 0:
-        return [lst[:p]] + divide(lst[p:], n-1)
+    if len(lst) - p > 0:
+        return [lst[:p]] + divide(lst[p:], n - 1)
     else:
         return [lst]
+
 
 def getFileIndices(in_path, numOfProcesses):
     # Divide the work between processes.
@@ -133,13 +136,17 @@ def process(datasetName):
 
     # Create the argument collection, where each element contains the array of parameters for each process.
     ProcessArguments = (
-        [process_path, datasetName, outputType] + [FileIndices] + [checkpointDict[processIndex]] + [maxPathContexts, maxLength,
-                                                                                      maxWidth,
-                                                                                      maxTreeSize, maxFileSize,
-                                                                                      splitToken,
-                                                                                      separator, upSymbol, downSymbol,
-                                                                                      labelPlaceholder, useParentheses]
-    for
+        [process_path, datasetName, outputType] + [FileIndices] + [checkpointDict[processIndex]] + [maxPathContexts,
+                                                                                                    maxLength,
+                                                                                                    maxWidth,
+                                                                                                    maxTreeSize,
+                                                                                                    maxFileSize,
+                                                                                                    splitToken,
+                                                                                                    separator, upSymbol,
+                                                                                                    downSymbol,
+                                                                                                    labelPlaceholder,
+                                                                                                    useParentheses]
+        for
         processIndex, FileIndices in enumerate(processFileIndices))
 
     # # Start executing multiple processes.
