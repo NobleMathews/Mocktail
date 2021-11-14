@@ -8,10 +8,10 @@ import gc
 import ray
 import re
 from shutil import copy, rmtree
-import threading
+import multiprocessing
 import time
 
-timeout_duration = 300.0
+timeout_duration = 300
 
 
 class RunWithTimeout(object):
@@ -24,10 +24,16 @@ class RunWithTimeout(object):
         self.answer = self.function(*self.args)
 
     def run(self, retans, timeout=timeout_duration):
-        thread = threading.Thread(target=self.worker)
+        thread = multiprocessing.Process(target=self.worker)
         thread.start()
         thread.join(timeout)
+        try:
+            thread.terminate()
+            thread.join()
+        except Exception as e:
+            print(e)
         if self.answer:
+            print("GOO THREAD")
             return self.answer
         else:
             print("TIMED OUT")
@@ -99,13 +105,13 @@ def generate_dataset(params):
         for ast_file in os.listdir(ast_path_s):
             if ast_file.endswith(".dot"):
                 timed_runner = RunWithTimeout(extract_ast_paths, (os.path.join(ast_path_s, ast_file), maxLength,
-                                                                 maxWidth, maxTreeSize, splitToken, separator,
-                                                                 upSymbol, downSymbol, labelPlaceholder,
-                                                                 useParentheses))
+                                                                  maxWidth, maxTreeSize, splitToken, separator,
+                                                                  upSymbol, downSymbol, labelPlaceholder,
+                                                                  useParentheses))
                 label, ast_path, source_node = timed_runner.run(("", [], ""))
                 ast_paths.extend(ast_path)
                 source_nodes.extend(source_node)
-
+        auto_garbage_collect()
         # If no paths are generated, Reset and continue.
         if not ast_paths or label is None or label == "":
             print(workingDir, file_name, "no paths!!!")
@@ -122,26 +128,30 @@ def generate_dataset(params):
         # for source in source_nodes:
         for cfg_file in os.listdir(cfg_path_s):
             if cfg_file.endswith(".dot"):
-                timed_runner = RunWithTimeout(extract_cfg_paths,(os.path.join(cfg_path_s, cfg_file), source_nodes,
-                                      splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
-                                      useParentheses))
+                timed_runner = RunWithTimeout(extract_cfg_paths, (os.path.join(cfg_path_s, cfg_file), source_nodes,
+                                                                  splitToken, separator, upSymbol, downSymbol,
+                                                                  labelPlaceholder,
+                                                                  useParentheses))
                 cfg_paths.extend(
                     timed_runner.run([])
                 )
+        auto_garbage_collect()
         for ddg_file in os.listdir(ddg_path_s):
             if ddg_file.endswith(".dot"):
-                timed_runner = RunWithTimeout(extract_ddg_paths,(os.path.join(ddg_path_s, ddg_file), source,
-                                  splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
-                                  useParentheses))
+                timed_runner = RunWithTimeout(extract_ddg_paths, (os.path.join(ddg_path_s, ddg_file), source,
+                                                                  splitToken, separator, upSymbol, downSymbol,
+                                                                  labelPlaceholder,
+                                                                  useParentheses))
                 ddg_paths.extend(timed_runner.run([]))
-
+        auto_garbage_collect()
         for cdg_file in os.listdir(cdg_path_s):
             if cdg_file.endswith(".dot"):
-                timed_runner = RunWithTimeout(extract_cdg_paths,(os.path.join(cdg_path_s, cdg_file),
-                                      splitToken, separator, upSymbol, downSymbol, labelPlaceholder,
-                                      useParentheses))
+                timed_runner = RunWithTimeout(extract_cdg_paths, (os.path.join(cdg_path_s, cdg_file),
+                                                                  splitToken, separator, upSymbol, downSymbol,
+                                                                  labelPlaceholder,
+                                                                  useParentheses))
                 cdg_paths.extend(timed_runner.run([]))
-
+        auto_garbage_collect()
         # Select maxPathContexts number of path contexts randomly.
         if len(ast_paths) > maxPathContexts:
             ast_paths = random.sample(ast_paths, maxPathContexts)
@@ -163,10 +173,10 @@ def generate_dataset(params):
             label = datasetName
         store_paths(label, file_name, datasetName, ast_paths, cfg_paths, cdg_paths, ddg_paths)
 
-        # Remove the current file, and ast, cfg, pdg folder after processing current sample. Otherwise, joern will bail out. 
+        # Remove the current file, and ast, cfg, pdg folder after processing current sample. Otherwise, joern will bail out.
         os.remove(os.path.join(workingDir, "workspace", file_name))
         for folder in os.listdir(os.path.join(workingDir, "outdir")):
             rmtree(os.path.join(workingDir, "outdir", folder))
-    rmtree(workingDir)
-    auto_garbage_collect()
+        print("RMTREE COMPLETED")
+    # rmtree(workingDir)
     return 1

@@ -154,6 +154,9 @@ def process(datasetName):
     #     pool.map(generate_dataset, ProcessArguments)
 
     ray.get([generate_dataset.remote(x) for x in ProcessArguments])
+    for filename in glob.glob("./_temp_*"):
+        print(filename)
+        rmtree(filename)
 
 
 def post_process(options):
