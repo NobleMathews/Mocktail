@@ -13,18 +13,23 @@ import time
 
 timeout_duration = 300
 
-
 class RunWithTimeout(object):
     def __init__(self, function, args):
         self.function = function
         self.args = args
         self.answer = None
 
-    def worker(self):
-        self.answer = self.function(*self.args)
+    def worker(self, return_dict):
+        ret = return_dict.get()
+        ret["RETURN"] = None
+        ret["RETURN"] = self.function(*self.args)
+        return_dict.put(ret)
 
     def run(self, retans, timeout=timeout_duration):
-        thread = multiprocessing.Process(target=self.worker)
+        return_dict = {}
+        queue = multiprocessing.Queue()
+        queue.put(return_dict)
+        thread = multiprocessing.Process(target=self.worker, args=(queue,))
         thread.start()
         thread.join(timeout)
         try:
@@ -32,8 +37,10 @@ class RunWithTimeout(object):
             thread.join()
         except Exception as e:
             print(e)
+        local_answer = queue.get()
+        self.answer = local_answer.get("RETURN")
         if self.answer:
-            print("GOO THREAD")
+            print("GOOD THREAD")
             return self.answer
         else:
             print("TIMED OUT")
