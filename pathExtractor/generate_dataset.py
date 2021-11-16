@@ -8,43 +8,7 @@ import gc
 import ray
 import re
 from shutil import copy, rmtree
-import multiprocessing
 import time
-
-timeout_duration = 300
-
-class RunWithTimeout(object):
-    def __init__(self, function, args):
-        self.function = function
-        self.args = args
-        self.answer = None
-
-    def worker(self, return_dict):
-        ret = return_dict.get()
-        ret["RETURN"] = None
-        ret["RETURN"] = self.function(*self.args)
-        return_dict.put(ret)
-
-    def run(self, retans, timeout=timeout_duration):
-        return_dict = {}
-        queue = multiprocessing.Queue()
-        queue.put(return_dict)
-        thread = multiprocessing.Process(target=self.worker, args=(queue,))
-        thread.start()
-        thread.join(timeout)
-        try:
-            thread.terminate()
-            thread.join()
-        except Exception as e:
-            print(e)
-        local_answer = queue.get()
-        self.answer = local_answer.get("RETURN")
-        if self.answer:
-            print("GOOD THREAD")
-            return self.answer
-        else:
-            print("TIMED OUT")
-            return retans
 
 
 def repl(m):
@@ -106,21 +70,20 @@ def generate_dataset(params):
         # Extract paths from AST, CFG, DDG, CDG.
         label = None
         ast_paths = []
-        source_nodes = []
+        # source_nodes = []
 
         ast_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ast"))
         for ast_file in os.listdir(ast_path_s):
             if ast_file.endswith(".dot"):
-                timed_runner = RunWithTimeout(extract_ast_paths, (os.path.join(ast_path_s, ast_file), maxLength,
-                                                                  maxWidth, maxTreeSize, splitToken, separator,
-                                                                  upSymbol, downSymbol, labelPlaceholder,
-                                                                  useParentheses))
-                label, ast_path, source_node = timed_runner.run(("", [], ""))
-                ast_paths.extend(ast_path)
-                source_nodes.extend(source_node)
+                # label, ast_path =
+                ast_paths.extend(extract_ast_paths(os.path.join(ast_path_s, ast_file), maxLength,
+                                                   maxWidth, maxTreeSize, splitToken, separator,
+                                                   upSymbol, downSymbol, labelPlaceholder,
+                                                   useParentheses))
+                # source_nodes.extend(source_node)
         auto_garbage_collect()
         # If no paths are generated, Reset and continue.
-        if not ast_paths or label is None or label == "":
+        if not ast_paths:
             print(workingDir, file_name, "no paths!!!")
             os.remove(os.path.join(workingDir, "workspace", file_name))
             for folder in os.listdir(os.path.join(workingDir, "outdir")):
@@ -135,29 +98,26 @@ def generate_dataset(params):
         # for source in source_nodes:
         for cfg_file in os.listdir(cfg_path_s):
             if cfg_file.endswith(".dot"):
-                timed_runner = RunWithTimeout(extract_cfg_paths, (os.path.join(cfg_path_s, cfg_file), source_nodes,
-                                                                  splitToken, separator, upSymbol, downSymbol,
-                                                                  labelPlaceholder,
-                                                                  useParentheses))
                 cfg_paths.extend(
-                    timed_runner.run([])
+                    extract_cfg_paths(os.path.join(cfg_path_s, cfg_file), source,
+                                      splitToken, separator, upSymbol, downSymbol,
+                                      labelPlaceholder,
+                                      useParentheses)
                 )
         auto_garbage_collect()
         for ddg_file in os.listdir(ddg_path_s):
             if ddg_file.endswith(".dot"):
-                timed_runner = RunWithTimeout(extract_ddg_paths, (os.path.join(ddg_path_s, ddg_file), source,
-                                                                  splitToken, separator, upSymbol, downSymbol,
-                                                                  labelPlaceholder,
-                                                                  useParentheses))
-                ddg_paths.extend(timed_runner.run([]))
+                ddg_paths.extend(extract_ddg_paths(os.path.join(ddg_path_s, ddg_file), source,
+                                                   splitToken, separator, upSymbol, downSymbol,
+                                                   labelPlaceholder,
+                                                   useParentheses))
         auto_garbage_collect()
         for cdg_file in os.listdir(cdg_path_s):
             if cdg_file.endswith(".dot"):
-                timed_runner = RunWithTimeout(extract_cdg_paths, (os.path.join(cdg_path_s, cdg_file),
-                                                                  splitToken, separator, upSymbol, downSymbol,
-                                                                  labelPlaceholder,
-                                                                  useParentheses))
-                cdg_paths.extend(timed_runner.run([]))
+                cdg_paths.extend(extract_cdg_paths(os.path.join(cdg_path_s, cdg_file),
+                                                   splitToken, separator, upSymbol, downSymbol,
+                                                   labelPlaceholder,
+                                                   useParentheses))
         auto_garbage_collect()
         # Select maxPathContexts number of path contexts randomly.
         if len(ast_paths) > maxPathContexts:
@@ -178,6 +138,7 @@ def generate_dataset(params):
         # Storing the extracted paths in files.
         if outputType == "file":
             label = datasetName
+        print("SUCESS PATH SAVED TO C2V FILE")
         store_paths(label, file_name, datasetName, ast_paths, cfg_paths, cdg_paths, ddg_paths)
 
         # Remove the current file, and ast, cfg, pdg folder after processing current sample. Otherwise, joern will bail out.

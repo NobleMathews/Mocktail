@@ -1,18 +1,21 @@
 import networkx as nx
 from pathExtractor.utils import *
 import os
-import ray
+from timeit import default_timer as timer
+
+timeout_duration = 300
 
 
 def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitToken=False, separator='|', upSymbol='↑',
                       downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
+    start = timer()
     try:
         ast = nx.DiGraph(nx.drawing.nx_pydot.read_dot(ast_path))
     except:
-        return ("", [], "")
+        return []
 
-    if (ast.number_of_nodes() > maxTreeSize or ast.number_of_nodes() == 0):
-        return ("", [], "")
+    if ast.number_of_nodes() > maxTreeSize or ast.number_of_nodes() == 0:
+        return []
 
     nx.set_node_attributes(ast, [], 'pathPieces')
 
@@ -31,14 +34,14 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     for source in source_nodes:
         postOrder = list(nx.dfs_postorder_nodes(ast, source=source))
 
-        normalizedLabel = normalizeAst(ast, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
-
+        # normalizedLabel = normalizeAst(ast, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
         for currentNode in postOrder:
+            if timer()-start > timeout_duration:
+                return []
             if not list(ast.successors(currentNode)):  # List is empty i.e node is leaf
                 attributes = ast.nodes[currentNode]['label'][2:-2].split(',')
                 attributes = [attr.strip() for attr in attributes]
-                if len(attributes) > 1 and attributes[
-                    1]:  # attribute[1] is token of the leaf node. If the token is not empty.
+                if len(attributes) > 1 and attributes[1]:  # attribute[1] is token of the leaf node. If the token is not empty.
                     ast.nodes[currentNode]['pathPieces'] = [[currentNode]]
             else:
                 # Creates a list of pathPieces per child i.e. list(list(list(nodes))) <--> list(list(pathPieces)) <--> list(PathPieces per child)
@@ -67,7 +70,7 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     # for path in paths:
     #     print(path)
 
-    return (normalizedLabel, paths, source_nodes)
+    return paths
 
 
 def extract_cfg_paths(cfg_path, source_nodes, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
@@ -100,6 +103,7 @@ def extract_cfg_paths(cfg_path, source_nodes, splitToken=False, separator='|', u
 
 def traverse_cfg_paths(cfg, node, path, Visited, start_token="", splitToken=False, separator='|', upSymbol='↑',
                        downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
+    start = timer()
     attributes = normalizeNode(cfg, node, splitToken, separator, labelPlaceholder, useParentheses)
     if path:
         path.append(downSymbol + attributes[0])
@@ -113,6 +117,8 @@ def traverse_cfg_paths(cfg, node, path, Visited, start_token="", splitToken=Fals
 
     if children:
         for child in children:
+            if timer()-start > timeout_duration:
+                return []
             if child not in Visited:
                 child_paths += traverse_cfg_paths(cfg, child, path.copy(), Visited.copy(), start_token, splitToken,
                                                   separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
@@ -153,6 +159,7 @@ def extract_cdg_paths(cdg_path, splitToken=False, separator='|', upSymbol='↑',
 
 def traverse_cdg_paths(cdg, node, path, Visited, start_token="", splitToken=False, separator='|', upSymbol='↑',
                        downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
+    start = timer()
     attributes = normalizeNode(cdg, node, splitToken, separator, labelPlaceholder, useParentheses)
     if path:
         path.append(downSymbol + attributes[0])
@@ -166,6 +173,8 @@ def traverse_cdg_paths(cdg, node, path, Visited, start_token="", splitToken=Fals
 
     if children:
         for child in children:
+            if timer()-start > timeout_duration:
+                return []
             if child not in Visited:
                 child_paths += traverse_cdg_paths(cdg, child, path.copy(), Visited.copy(), start_token, splitToken,
                                                   separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
@@ -201,6 +210,7 @@ def extract_ddg_paths(ddg_path, source="1000101", splitToken=False, separator='|
 
 def traverse_ddg_paths(ddg, node, path, Visited, start_token="", edge_label="", splitToken=False, separator='|',
                        upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
+    start = timer()
     attributes = normalizeNode(ddg, node, splitToken, separator, labelPlaceholder, useParentheses)
     if path:
         path.append(downSymbol + attributes[0])
@@ -214,6 +224,8 @@ def traverse_ddg_paths(ddg, node, path, Visited, start_token="", edge_label="", 
 
     if edges:
         for edge in edges:
+            if timer()-start > timeout_duration:
+                return []
             if edge_label == "" or edge_label == None or edge_label in edge[2] or edge[2] in edge_label:
                 if edge[1] not in Visited:
                     if edge_label == "" or edge_label == None or edge[2] in edge_label:
