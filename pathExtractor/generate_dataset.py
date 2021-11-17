@@ -15,7 +15,7 @@ def repl(m):
     return "digraph " + ' ' * (len(m.group(1)) - 2) + " {"
 
 
-def auto_garbage_collect(pct=80.0):
+def auto_garbage_collect(pct=60.0):
     if psutil.virtual_memory().percent >= pct:
         print("GARBAGE COLLECTED")
         gc.collect()
@@ -75,13 +75,13 @@ def generate_dataset(params):
         ast_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ast"))
         for ast_file in os.listdir(ast_path_s):
             if ast_file.endswith(".dot"):
+                auto_garbage_collect()
                 # label, ast_path =
                 ast_paths.extend(extract_ast_paths(os.path.join(ast_path_s, ast_file), maxLength,
                                                    maxWidth, maxTreeSize, splitToken, separator,
                                                    upSymbol, downSymbol, labelPlaceholder,
                                                    useParentheses))
                 # source_nodes.extend(source_node)
-        auto_garbage_collect()
         # If no paths are generated, Reset and continue.
         if not ast_paths:
             print(workingDir, file_name, "no paths!!!")
@@ -98,27 +98,27 @@ def generate_dataset(params):
         # for source in source_nodes:
         for cfg_file in os.listdir(cfg_path_s):
             if cfg_file.endswith(".dot"):
+                auto_garbage_collect()
                 cfg_paths.extend(
                     extract_cfg_paths(os.path.join(cfg_path_s, cfg_file), source,
                                       splitToken, separator, upSymbol, downSymbol,
                                       labelPlaceholder,
                                       useParentheses)
                 )
-        auto_garbage_collect()
         for ddg_file in os.listdir(ddg_path_s):
             if ddg_file.endswith(".dot"):
+                auto_garbage_collect()
                 ddg_paths.extend(extract_ddg_paths(os.path.join(ddg_path_s, ddg_file), source,
                                                    splitToken, separator, upSymbol, downSymbol,
                                                    labelPlaceholder,
                                                    useParentheses))
-        auto_garbage_collect()
         for cdg_file in os.listdir(cdg_path_s):
             if cdg_file.endswith(".dot"):
+                auto_garbage_collect()
                 cdg_paths.extend(extract_cdg_paths(os.path.join(cdg_path_s, cdg_file),
                                                    splitToken, separator, upSymbol, downSymbol,
                                                    labelPlaceholder,
                                                    useParentheses))
-        auto_garbage_collect()
         # Select maxPathContexts number of path contexts randomly.
         if len(ast_paths) > maxPathContexts:
             ast_paths = random.sample(ast_paths, maxPathContexts)
