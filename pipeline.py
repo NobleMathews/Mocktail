@@ -11,7 +11,6 @@ from pathlib import Path
 import configparser
 import questionary
 import os
-import math
 from shutil import rmtree, which
 
 # find . -name '*.txt' -exec sh -c 'mv "$0" "${0%.txt}.c"' {} \;
@@ -152,7 +151,7 @@ def process(datasetName):
     # # Start executing multiple processes.
     # with mp.Pool(processes = numOfProcesses) as pool:
     #     pool.map(generate_dataset, ProcessArguments)
-    ray.init(num_cpus=math.ceil(num_cpus/2))
+    ray.init(num_cpus=num_cpus)
     ray.get([generate_dataset.remote(x) for x in ProcessArguments])
     for filename in glob.glob("./_temp_*"):
         print(filename)
