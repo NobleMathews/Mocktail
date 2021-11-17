@@ -26,7 +26,6 @@ output_dir = "./3_output"
 # dot -Tpng 0-ast.dot -o 0-ast.png
 numOfProcesses = psutil.cpu_count()
 num_cpus = psutil.cpu_count(logical=False)
-ray.init(num_cpus=num_cpus)
 
 
 def checks():
@@ -152,11 +151,12 @@ def process(datasetName):
     # # Start executing multiple processes.
     # with mp.Pool(processes = numOfProcesses) as pool:
     #     pool.map(generate_dataset, ProcessArguments)
-
+    ray.init(num_cpus=num_cpus)
     ray.get([generate_dataset.remote(x) for x in ProcessArguments])
     for filename in glob.glob("./_temp_*"):
         print(filename)
         rmtree(filename)
+    ray.shutdown()
 
 
 def post_process(options):
