@@ -3,8 +3,9 @@ from pathExtractor.utils import *
 import os
 from timeit import default_timer as timer
 
-timeout_duration = 150.0
+timeout_duration = 120.0
 max_length = 100
+max_child = 50
 
 
 def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitToken=False, separator='|', upSymbol='↑',
@@ -124,7 +125,7 @@ def traverse_cfg_paths(start, cfg, node, path, Visited, start_token="", splitTok
 
     if children:
         for child in children:
-            if child not in Visited:
+            if child not in Visited and len(child_paths) < max_child:
                 child_paths += traverse_cfg_paths(start, cfg, child, path.copy(), Visited.copy(), start_token,
                                                   splitToken,
                                                   separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
@@ -181,7 +182,7 @@ def traverse_cdg_paths(start, cdg, node, path, Visited, start_token="", splitTok
 
     if children:
         for child in children:
-            if child not in Visited:
+            if child not in Visited and len(child_paths) < max_child:
                 child_paths += traverse_cdg_paths(start, cdg, child, path.copy(), Visited.copy(), start_token,
                                                   splitToken,
                                                   separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
@@ -236,7 +237,7 @@ def traverse_ddg_paths(start, ddg, node, path, Visited, start_token="", edge_lab
     if edges:
         for edge in edges:
             if edge_label == "" or edge_label == None or edge_label in edge[2] or edge[2] in edge_label:
-                if edge[1] not in Visited:
+                if edge[1] not in Visited  and len(child_paths) < max_child:
                     if edge_label == "" or edge_label == None or edge[2] in edge_label:
                         child_paths += traverse_ddg_paths(start, ddg, edge[1], path.copy(), Visited.copy(), start_token,
                                                           edge[2], splitToken, separator, upSymbol, downSymbol,
