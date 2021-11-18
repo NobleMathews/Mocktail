@@ -179,46 +179,49 @@ def post_process(options):
 
     ## For normal Train-Test-Val split.
     for dataset_name in datasets:
-        destination_dir = os.path.join(output_dir, dataset_name, dataset_name_ext)
-        data_path = os.path.join(process_path, dataset_name, dataset_name + ".c2v")
-        os.makedirs(destination_dir, exist_ok=True)
+        try:
+            destination_dir = os.path.join(output_dir, dataset_name, dataset_name_ext)
+            data_path = os.path.join(process_path, dataset_name, dataset_name + ".c2v")
+            os.makedirs(destination_dir, exist_ok=True)
 
-        ## Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
-        num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name,
-                                                                             "{}.c2v".format(dataset_name + '.full')),
-                                                     max_path_count, not_include_methods, hash_to_string_dict)
+            ## Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
+            num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name,
+                                                                                 "{}.c2v".format(dataset_name + '.full')),
+                                                         max_path_count, not_include_methods, hash_to_string_dict)
 
-        ## Shuffle the output file of above step.
-        if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))):
-            print("{} already exists!".format(
-                os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))))
-        else:
-            os.system(
-                'terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(
-                    output_dir=output_dir, dataset_name=dataset_name))
+            ## Shuffle the output file of above step.
+            if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))):
+                print("{} already exists!".format(
+                    os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))))
+            else:
+                os.system(
+                    'terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(
+                        output_dir=output_dir, dataset_name=dataset_name))
 
-        ## Splitting the joined and shuffled file into Train-Test-Val sets.
-        split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples)
+            ## Splitting the joined and shuffled file into Train-Test-Val sets.
+            split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples)
 
-        ## Use "include_paths" to select specific type of paths.
-        filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)),
-                     os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                     include_paths, max_path_count)
-        filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)),
-                     os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                     include_paths, max_path_count)
-        filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)),
-                     os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                     include_paths, max_path_count)
+            ## Use "include_paths" to select specific type of paths.
+            filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)),
+                         os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                         include_paths, max_path_count)
+            filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)),
+                         os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                         include_paths, max_path_count)
+            filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)),
+                         os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                         include_paths, max_path_count)
 
-        ## Create dictionaries using training data.
-        create_dictionaries(os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                            token_freq_dict, path_freq_dict, target_freq_dict)
+            ## Create dictionaries using training data.
+            create_dictionaries(os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                                token_freq_dict, path_freq_dict, target_freq_dict)
 
-        ## Save the dictionary file.
-        save_dictionaries(os.path.join(destination_dir, '{}.dict.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                          hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict,
-                          round(num_examples * 0.89))
+            ## Save the dictionary file.
+            save_dictionaries(os.path.join(destination_dir, '{}.dict.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                              hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict,
+                              round(num_examples * 0.89))
+        except Exception as e:
+            print(e)
 
 
 if __name__ == "__main__":
