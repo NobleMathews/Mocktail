@@ -2,22 +2,25 @@ import configparser
 import pickle
 import os
 
+
 # This function is taken from code2vec (https://github.com/tech-srl/code2vec/blob/master/extractor.py)
 def java_string_hashcode(s):
-        """
+    """
         Imitating Java's String#hashCode, because the model is trained on hashed paths but we wish to
         Present the path attention on un-hashed paths.
         """
-        h = 0
-        for c in s:
-            h = (31 * h + ord(c)) & 0xFFFFFFFF
-        return ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
+    h = 0
+    for c in s:
+        h = (31 * h + ord(c)) & 0xFFFFFFFF
+    return ((h + 0x80000000) & 0xFFFFFFFF) - 0x80000000
+
 
 def update_freq_dict(freq_dict, word):
     if word in freq_dict:
         freq_dict[word] += 1
     else:
         freq_dict[word] = 1
+
 
 def create_dictionaries(input_file, token_freq_dict, path_freq_dict, target_freq_dict):
     with open(input_file, 'r', encoding='utf-8') as fin:
@@ -28,12 +31,17 @@ def create_dictionaries(input_file, token_freq_dict, path_freq_dict, target_freq
 
             for path_context in fields[1:]:
                 if path_context != '':
-                    start_token, path, end_token = path_context.split(',')
-                    update_freq_dict(token_freq_dict, start_token)
-                    update_freq_dict(path_freq_dict, path)
-                    update_freq_dict(token_freq_dict, end_token)
+                    try:
+                        start_token, path, end_token = path_context.split(',')
+                        update_freq_dict(token_freq_dict, start_token)
+                        update_freq_dict(path_freq_dict, path)
+                        update_freq_dict(token_freq_dict, end_token)
+                    except Exception as e:
+                        print(e)
 
-def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, num_training_examples):
+
+def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict,
+                      num_training_examples):
     if os.path.isfile(output_file):
         print("{} already exist!".format(output_file))
         return
@@ -49,6 +57,7 @@ def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_fr
     #         f.write(hashed_path + '\t' + context_path + '\n')
 
     print('Dictionaries saved to: {}'.format(output_file))
+
 
 def split_dataset(output_dir, dataset_name, num_examples):
     full_shuffled_file = os.path.join(output_dir, '{}.full.shuffled.c2v'.format(dataset_name))
@@ -80,6 +89,7 @@ def split_dataset(output_dir, dataset_name, num_examples):
                         elif line_count > val_index and line_count <= test_index:
                             fo2.write(line)
 
+
 def filter_paths(input_file, output_file, include_paths, max_path_count):
     if os.path.isfile(output_file):
         print("{} already exists!".format(output_file))
@@ -92,10 +102,13 @@ def filter_paths(input_file, output_file, include_paths, max_path_count):
             for line in fin:
                 fields = line.strip('\n').split(' ')
                 label = fields[0]
-                ast_paths = fields[1 : (max_path_count['ast'] + 1)]
-                cfg_paths = fields[(max_path_count['ast'] + 1) : (max_path_count['ast'] + max_path_count['cfg'] + 1)]
-                cdg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + 1) : (max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1)]
-                ddg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1) : (max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + max_path_count['ddg'] + 1)]
+                ast_paths = fields[1: (max_path_count['ast'] + 1)]
+                cfg_paths = fields[(max_path_count['ast'] + 1): (max_path_count['ast'] + max_path_count['cfg'] + 1)]
+                cdg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + 1): (
+                            max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1)]
+                ddg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1): (
+                            max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + max_path_count[
+                        'ddg'] + 1)]
 
                 valid_example = True
                 output = label
@@ -123,7 +136,7 @@ def filter_paths(input_file, output_file, include_paths, max_path_count):
 
                     output += (' ' + ' '.join(ddg_paths))
 
-                if valid_example:    
+                if valid_example:
                     if first_example:
                         fout.write(output)
                         first_example = False
@@ -131,15 +144,16 @@ def filter_paths(input_file, output_file, include_paths, max_path_count):
                         fout.write('\n' + output)
 
                     total_valid_examples += 1
-            
+
     print("Number of Valid Examples in {file}: {count}".format(file=output_file, count=total_valid_examples))
- 
+
+
 def convert_to_model_input_format(input_file, output_file, max_paths, not_include_methods, hash_to_string_dict):
     if os.path.isfile(output_file):
         print("{} already exists!".format(output_file))
         return sum(1 for line in open(output_file, 'r', encoding='utf-8') if line.strip() != '')
 
-    total_valid_examples = 0      # Total valid examples (valid --> example with valid non-empty label)
+    total_valid_examples = 0  # Total valid examples (valid --> example with valid non-empty label)
     empty_examples = 0
     startToken = ''
     path = ''
@@ -149,10 +163,10 @@ def convert_to_model_input_format(input_file, output_file, max_paths, not_includ
     first_example = True
     valid_example = False
 
-    total_path_count = {'ast':0, 'cfg':0, 'cdg':0, 'ddg':0}
-    current_path_count = {'ast':0, 'cfg':0, 'cdg':0, 'ddg':0}
+    total_path_count = {'ast': 0, 'cfg': 0, 'cdg': 0, 'ddg': 0}
+    current_path_count = {'ast': 0, 'cfg': 0, 'cdg': 0, 'ddg': 0}
     current_counter = 'ast'
-    
+
     with open(output_file, 'a', encoding="utf-8") as fout:
         with open(input_file, 'r', encoding="utf-8") as f:
             for line in f:
@@ -161,7 +175,7 @@ def convert_to_model_input_format(input_file, output_file, max_paths, not_includ
                         current_row += (' ' * (max_paths['ddg'] - current_path_count['ddg'] - 1))
                         fout.write(current_row)
                         total_valid_examples += 1
-        
+
                         total_path_count['ddg'] += current_path_count['ddg']
                         current_path_count['ddg'] = 0
 
@@ -177,21 +191,22 @@ def convert_to_model_input_format(input_file, output_file, max_paths, not_includ
                             current_row += (label + ' ')
                             first_example = False
                         else:
-                            current_row += ('\n' + label + ' ')     # \t or ' '
+                            current_row += ('\n' + label + ' ')  # \t or ' '
 
                 elif not line.strip() or line.startswith("#") or line.startswith("file:"):
                     continue
-                
+
                 elif line.startswith("path: ast") and valid_example:
                     current_counter = 'ast'
 
-                elif (line.startswith("path: cfg") or line.startswith("path: cdg") or line.startswith("path: ddg")) and valid_example:
+                elif (line.startswith("path: cfg") or line.startswith("path: cdg") or line.startswith(
+                        "path: ddg")) and valid_example:
                     current_row += (' ' * (max_paths[current_counter] - current_path_count[current_counter] - 1))
                     total_path_count[current_counter] += current_path_count[current_counter]
                     current_path_count[current_counter] = 0
 
                     current_counter = line.lstrip('path: \n\t').rstrip(' \n\t')
-                    current_row += ' '      # \t or ' '
+                    current_row += ' '  # \t or ' '
 
                 else:
                     if (not valid_example) or (current_path_count[current_counter] >= max_paths[current_counter]):
@@ -220,7 +235,7 @@ def convert_to_model_input_format(input_file, output_file, max_paths, not_includ
 
                     else:
                         continue
-                    
+
                     if (not startToken) or (not path) or (not endToken):
                         continue
 
@@ -245,8 +260,8 @@ def convert_to_model_input_format(input_file, output_file, max_paths, not_includ
     print('Empty/Bad Label examples: ' + str(empty_examples))
     print('Average Path Count: ')
     for rep, count in total_path_count.items():
-        print(rep, count/total_valid_examples)
-    
+        print(rep, count / total_valid_examples)
+
     return total_valid_examples
 
 # if __name__ == '__main__':
