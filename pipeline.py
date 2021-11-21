@@ -26,7 +26,7 @@ output_dir = "./3_output"
 # dot -Tpng 0-ast.dot -o 0-ast.png
 numOfProcesses = psutil.cpu_count()
 num_cpus = psutil.cpu_count(logical=False)
-
+outputType = config['projectPreprocessor']['outputType']
 
 def checks():
     # if os.getuid() == 0:
@@ -63,7 +63,6 @@ def getFileIndices(in_path, numOfProcesses):
 
 def pre_process():
     # print({section: dict(config[section]) for section in config.sections()})
-    outputType = config['projectPreprocessor']['outputType']
     maxFileSize = config['projectPreprocessor'].getint('maxFileSize')
 
     intermediate_path = os.path.join(dirname, in_path, "_temp_file_dir_")
@@ -217,8 +216,8 @@ def post_process(options):
                                 token_freq_dict, path_freq_dict, target_freq_dict)
 
             ## Save the dictionary file.
-            save_dictionaries(os.path.join(destination_dir, '{}.dict.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                              hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict,
+            save_dictionaries(os.path.join(output_dir, '{}.dict.c2v'.format(dataset_name_ext)),
+                              hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
                               round(num_examples * 0.89))
         except Exception as e:
             print(e)

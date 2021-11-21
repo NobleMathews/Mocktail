@@ -36,7 +36,7 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     for source in source_nodes:
         postOrder = list(nx.dfs_postorder_nodes(ast, source=source))
 
-        # normalizedLabel = normalizeAst(ast, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
+        normalizedLabel = normalizeAst(ast, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
         for currentNode in postOrder:
             if timer() - start > timeout_duration:
                 return []

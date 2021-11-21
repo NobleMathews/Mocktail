@@ -40,17 +40,33 @@ def create_dictionaries(input_file, token_freq_dict, path_freq_dict, target_freq
                         print(e)
 
 
-def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict,
+def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
                       num_training_examples):
-    if os.path.isfile(output_file):
+    if os.path.isfile(output_file) and outputType != "file":
         print("{} already exist!".format(output_file))
         return
 
     with open(output_file, 'wb') as f:
-        pickle.dump(token_freq_dict, f)
-        pickle.dump(path_freq_dict, f)
-        pickle.dump(target_freq_dict, f)
-        pickle.dump(num_training_examples, f)
+        token_freq_dict_old = {}
+        path_freq_dict_old = {}
+        target_freq_dict_old = {}
+        count = 0
+        if os.path.isfile(output_file) and outputType == "file":
+            if os.stat(output_file).st_size != 0:
+                with open(output_file, 'rb') as fo:
+                    token_freq_dict_old = pickle.load(fo)
+                    path_freq_dict_old = pickle.load(fo)
+                    target_freq_dict_old = pickle.load(fo)
+                    count = pickle.load(fo)
+        # token_freq_dict_old.update(token_freq_dict)
+        # path_freq_dict_old.update(path_freq_dict)
+        # target_freq_dict_old.update(target_freq_dict)
+        # count = count + num_training_examples
+
+        pickle.dump({k: token_freq_dict_old.get(k, 0) + token_freq_dict.get(k, 0) for k in set(token_freq_dict_old) | set(token_freq_dict)}, f)
+        pickle.dump({k: token_freq_dict_old.get(k, 0) + path_freq_dict.get(k, 0) for k in set(path_freq_dict_old) | set(path_freq_dict)}, f)
+        pickle.dump({k: token_freq_dict_old.get(k, 0) + target_freq_dict.get(k, 0) for k in set(target_freq_dict_old) | set(target_freq_dict)}, f)
+        pickle.dump(count + num_training_examples, f)
 
     # with open("path_dict.c2v", 'w', encoding="utf-8") as f:
     #     for hashed_path, context_path in hash_to_string_dict.items():
