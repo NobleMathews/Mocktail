@@ -203,12 +203,15 @@ def post_process(options):
             ## Use "include_paths" to select specific type of paths.
             filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)),
                          os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                         os.path.join(output_dir, '{}.train.c2v'.format(dataset_name_ext)),
                          include_paths, max_path_count)
             filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)),
                          os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                      os.path.join(output_dir, '{}.test.c2v'.format(dataset_name_ext)),
                          include_paths, max_path_count)
             filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)),
                          os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                      os.path.join(output_dir, '{}.val.c2v'.format(dataset_name_ext)),
                          include_paths, max_path_count)
 
             ## Create dictionaries using training data.
