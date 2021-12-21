@@ -27,16 +27,23 @@ def generate_dataset(params):
     maxPathContexts, maxLength, maxWidth, maxTreeSize, maxFileSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses = params
 
     # Create temporary working directories.
-    print("creating temp working dir")
     workingDir = os.path.abspath("_temp_dir_" + str(os.getpid()))
     if not os.path.exists(os.path.join(workingDir, "workspace")):
         os.makedirs(os.path.join(workingDir, "workspace"))
 
     if not os.path.exists(os.path.join(workingDir, "outdir")):
         os.mkdir(os.path.join(workingDir, "outdir"))
-
+    time_in = None
+    if len(fileIndices) < 1:
+        return -1
     # Process each file in the dataset one-by-one.
     for fileIndex in fileIndices:
+        if time_in is not None:
+            with open('time.txt', 'a') as fileO:
+                fileO.write(str(time.time() - time_in) + "\n")
+            print("Timing each file(s) -> " + str(time.time() - time_in))
+
+        time_in = time.time()
         # If it is already extracted, continue.
         if fileIndex in checkpointSet:
             continue
@@ -56,13 +63,14 @@ def generate_dataset(params):
         print("begin joern")
         copy(in_file_path, os.path.join(workingDir, "workspace"))
         os.chdir(workingDir)
-        os.system("joern-parse workspace")
-        os.system("joern-export --repr ast --out " + os.path.join("outdir", "ast"))
-        os.system("joern-export --repr cfg --out " + os.path.join("outdir", "cfg"))
-        os.system("joern-export --repr cdg --out " + os.path.join("outdir", "cdg"))
-        os.system("joern-export --repr ddg --out " + os.path.join("outdir", "ddg"))
-        print("end joern")
-        print("begin dot cleanup")
+        preventOut = " >/dev/null 2>&1"
+        os.system("joern-parse workspace" + preventOut)
+        os.system("joern-export --repr ast --out " + os.path.join("outdir", "ast") + preventOut)
+        os.system("joern-export --repr cfg --out " + os.path.join("outdir", "cfg") + preventOut)
+        os.system("joern-export --repr cdg --out " + os.path.join("outdir", "cdg") + preventOut)
+        os.system("joern-export --repr ddg --out " + os.path.join("outdir", "ddg") + preventOut)
+        # print("end joern")
+        # print("begin dot cleanup")
         for dirpath, dirnames, filenames in os.walk(workingDir):
             for filename in [f for f in filenames if f.endswith(".dot")]:
                 with open(os.path.join(dirpath, filename), "r+") as f:
@@ -75,7 +83,7 @@ def generate_dataset(params):
         label = None
         ast_paths = []
         # source_nodes = []
-        print("begin ast check")
+        # print("begin ast check")
         ast_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ast"))
         for ast_file in os.listdir(ast_path_s):
             if ast_file.endswith(".dot"):
@@ -86,7 +94,7 @@ def generate_dataset(params):
                                                    upSymbol, downSymbol, labelPlaceholder,
                                                    useParentheses))
                 # source_nodes.extend(source_node)
-        print("end ast checks")
+        # print("end ast checks")
         # If no paths are generated, Reset and continue.
         if not ast_paths:
             print(workingDir, file_name, "no paths!!!")
@@ -101,7 +109,7 @@ def generate_dataset(params):
         ddg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ddg"))
         source = "1000101"
         # for source in source_nodes:
-        print("begin cfg")
+        # print("begin cfg")
         for cfg_file in os.listdir(cfg_path_s):
             if cfg_file.endswith(".dot"):
                 cfg_paths.extend(
@@ -111,7 +119,7 @@ def generate_dataset(params):
                                       useParentheses)
                 )
         auto_garbage_collect()
-        print("begin ddg")
+        # print("begin ddg")
         for ddg_file in os.listdir(ddg_path_s):
             if ddg_file.endswith(".dot"):
                 ddg_paths.extend(extract_ddg_paths(os.path.join(ddg_path_s, ddg_file), source,
@@ -119,7 +127,7 @@ def generate_dataset(params):
                                                    labelPlaceholder,
                                                    useParentheses))
         auto_garbage_collect()
-        print("begin cdg")
+        # print("begin cdg")
         for cdg_file in os.listdir(cdg_path_s):
             if cdg_file.endswith(".dot"):
                 cdg_paths.extend(extract_cdg_paths(os.path.join(cdg_path_s, cdg_file),
@@ -155,5 +163,23 @@ def generate_dataset(params):
         for folder in os.listdir(os.path.join(workingDir, "outdir")):
             rmtree(os.path.join(workingDir, "outdir", folder))
         print("RMTREE COMPLETED")
+    if time_in is not None:
+        with open('time.txt', 'a+') as fileO:
+            fileO.write(str(time.time() - time_in) + "\n")
+        print("Timing each file(s) -> " + str(time.time() - time_in))
     # rmtree(workingDir)
+    if os.path.exists("time.txt"):
+        with open("time.txt", 'r') as f:
+            fpm = 0
+            total_time = 0
+            for time_used in f:
+                time_used = time_used.strip()
+                fpm = fpm + 1 / float(time_used)
+                # total time for a dataset
+                total_time = total_time + float(time_used)
+            pass
+        # with open("time.txt", 'w') as f:
+        #     pass
+        with open('time_summary.txt', 'a+') as fileO:
+            fileO.write(str(total_time)+" per_file->fpm "+str(fpm) + "\n")
     return 1

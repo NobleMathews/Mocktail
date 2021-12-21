@@ -6,6 +6,7 @@ import ray
 from projectPreprocessor.process_files import *
 from pathExtractor.generate_dataset import *
 from output_formatter import *
+from ray_helper import *
 from questionary import Choice
 from pathlib import Path
 import configparser
@@ -115,7 +116,7 @@ def process(datasetName):
     # If the output files already exist, either use it as a checkpoint or don't continue the execution.
     if os.path.isfile(os.path.join(process_path, datasetName, datasetName + ".c2v")):
         if useCheckpoint:
-            print(datasetName + ".c2v file exists. Using it as a checkpoint ...")
+            # print(datasetName + ".c2v file exists. Using it as a checkpoint ...")
 
             with open(os.path.join(process_path, datasetName, datasetName + ".c2v"), 'r') as f:
                 for line in f:
@@ -129,7 +130,7 @@ def process(datasetName):
             initialCount += 1
 
         else:
-            print(datasetName + ".c2v file already exist. Exiting ...")
+            # print(datasetName + ".c2v file already exist. Exiting ...")
             sys.exit()
 
     # Create the argument collection, where each element contains the array of parameters for each process.
@@ -151,9 +152,12 @@ def process(datasetName):
     # with mp.Pool(processes = numOfProcesses) as pool:
     #     pool.map(generate_dataset, ProcessArguments)
     ray.init(num_cpus=num_cpus)
-    ray.get([generate_dataset.remote(x) for x in ProcessArguments])
+    # , log_to_driver=False
+    tasks_pre = [generate_dataset.remote(x) for x in ProcessArguments]
+    ray.get(tasks_pre)
+
     for filename in glob.glob("./_temp_*"):
-        print(filename)
+        # print(filename)
         rmtree(filename)
     ray.shutdown()
 
@@ -190,8 +194,9 @@ def post_process(options):
 
             ## Shuffle the output file of above step.
             if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))):
-                print("{} already exists!".format(
-                    os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))))
+                # print("{} already exists!".format(
+                os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))
+                #     ))
             else:
                 os.system(
                     'terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(
