@@ -146,6 +146,11 @@ def generate_dataset(params):
         if len(ddg_paths) > maxPathContexts:
             ddg_paths = random.sample(ddg_paths, maxPathContexts)
 
+        if time_in is not None:
+            with open('time.txt', 'a+') as fileO:
+                fileO.write(str(time.time() - time_in) + "\n")
+            print("Timing each file(s) -> " + str(time.time() - time_in))
+
         # If CDG, DDG paths are empty, then add a dummy path
         # if not cdg_paths:
         #     cdg_paths.append(("<NULL/>", "<NULL/>", "<NULL/>"))
@@ -163,10 +168,7 @@ def generate_dataset(params):
         for folder in os.listdir(os.path.join(workingDir, "outdir")):
             rmtree(os.path.join(workingDir, "outdir", folder))
         print("RMTREE COMPLETED")
-    if time_in is not None:
-        with open('time.txt', 'a+') as fileO:
-            fileO.write(str(time.time() - time_in) + "\n")
-        print("Timing each file(s) -> " + str(time.time() - time_in))
+
     # rmtree(workingDir)
     if os.path.exists("time.txt"):
         with open("time.txt", 'r') as f:
