@@ -247,10 +247,30 @@ if __name__ == "__main__":
                  Choice("DDG", checked=True)],
     ).ask()
     if "Preprocess project" in joblist:
+        if os.path.exists("time.txt"):
+            with open("time.txt", 'w') as f1:
+                pass
+        if os.path.exists("time_summary.txt"):
+            with open("time_summary.txt", 'w') as f2:
+                pass
         pre_process()
     if "Path extraction" in joblist:
         for f in os.scandir("./2_processed"):
             if f.is_dir():
                 process(f.name)
+            if os.path.exists("time.txt"):
+                with open("time.txt", 'r') as f1:
+                    fpm = 0
+                    total_time = 0
+                    for time_used in f1:
+                        time_used = time_used.strip()
+                        fpm = fpm + (1 / float(time_used))
+                        # total time for a dataset
+                        total_time = total_time + float(time_used)
+                    pass
+                with open('time_summary.txt', 'a+') as fileO:
+                    fileO.write(str(total_time) + " per_file->fpm " + str(fpm) + "\n")
+                os.rename('time.txt', f.name+'_time.txt')
+
     if "Format output" in joblist:
         post_process(include_paths)

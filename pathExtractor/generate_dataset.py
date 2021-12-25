@@ -38,12 +38,6 @@ def generate_dataset(params):
         return -1
     # Process each file in the dataset one-by-one.
     for fileIndex in fileIndices:
-        if time_in is not None:
-            with open('time.txt', 'a') as fileO:
-                fileO.write(str(time.time() - time_in) + "\n")
-            print("Timing each file(s) -> " + str(time.time() - time_in))
-
-        time_in = time.time()
         # If it is already extracted, continue.
         if fileIndex in checkpointSet:
             continue
@@ -61,6 +55,7 @@ def generate_dataset(params):
             continue
 
         print("begin joern")
+        time_in = time.time()
         copy(in_file_path, os.path.join(workingDir, "workspace"))
         os.chdir(workingDir)
         preventOut = " >/dev/null 2>&1"
@@ -136,6 +131,9 @@ def generate_dataset(params):
                                                    useParentheses))
         auto_garbage_collect()
         # Select maxPathContexts number of path contexts randomly.
+        with open('time.txt', 'a+') as fileO:
+            fileO.write(str(time.time() - time_in) + "\n")
+        print("Timing each file(s) -> " + str(time.time() - time_in))
         print("begin sampling")
         if len(ast_paths) > maxPathContexts:
             ast_paths = random.sample(ast_paths, maxPathContexts)
@@ -145,11 +143,6 @@ def generate_dataset(params):
             cdg_paths = random.sample(cdg_paths, maxPathContexts)
         if len(ddg_paths) > maxPathContexts:
             ddg_paths = random.sample(ddg_paths, maxPathContexts)
-
-        if time_in is not None:
-            with open('time.txt', 'a+') as fileO:
-                fileO.write(str(time.time() - time_in) + "\n")
-            print("Timing each file(s) -> " + str(time.time() - time_in))
 
         # If CDG, DDG paths are empty, then add a dummy path
         # if not cdg_paths:
@@ -170,18 +163,4 @@ def generate_dataset(params):
         print("RMTREE COMPLETED")
 
     # rmtree(workingDir)
-    if os.path.exists("time.txt"):
-        with open("time.txt", 'r') as f:
-            fpm = 0
-            total_time = 0
-            for time_used in f:
-                time_used = time_used.strip()
-                fpm = fpm + 1 / float(time_used)
-                # total time for a dataset
-                total_time = total_time + float(time_used)
-            pass
-        # with open("time.txt", 'w') as f:
-        #     pass
-        with open('time_summary.txt', 'a+') as fileO:
-            fileO.write(str(total_time)+" per_file->fpm "+str(fpm) + "\n")
     return 1
