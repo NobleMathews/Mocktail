@@ -24,7 +24,7 @@ def auto_garbage_collect(pct=15.0):
 @ray.remote
 def generate_dataset(params):
     in_path, datasetName, outputType, fileIndices, checkpointSet, \
-    maxPathContexts, maxLength, maxWidth, maxTreeSize, maxFileSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses = params
+    maxPathContexts, maxLength, maxWidth, maxTreeSize, maxFileSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses, include_paths = params
 
     # Create temporary working directories.
     workingDir = os.path.abspath("_temp_dir_" + str(os.getpid()))
@@ -61,9 +61,12 @@ def generate_dataset(params):
         preventOut = " >/dev/null 2>&1"
         os.system("joern-parse workspace" + preventOut)
         os.system("joern-export --repr ast --out " + os.path.join("outdir", "ast") + preventOut)
-        os.system("joern-export --repr cfg --out " + os.path.join("outdir", "cfg") + preventOut)
-        os.system("joern-export --repr cdg --out " + os.path.join("outdir", "cdg") + preventOut)
-        os.system("joern-export --repr ddg --out " + os.path.join("outdir", "ddg") + preventOut)
+        if "CFG" in include_paths:
+            os.system("joern-export --repr cfg --out " + os.path.join("outdir", "cfg") + preventOut)
+        if "CDG" in include_paths:
+            os.system("joern-export --repr cdg --out " + os.path.join("outdir", "cdg") + preventOut)
+        if "DDG" in include_paths:
+            os.system("joern-export --repr ddg --out " + os.path.join("outdir", "ddg") + preventOut)
         # print("end joern")
         # print("begin dot cleanup")
         for dirpath, dirnames, filenames in os.walk(workingDir):
@@ -99,37 +102,41 @@ def generate_dataset(params):
             continue
         print("begin cfg cdg and ddg")
         cfg_paths, cdg_paths, ddg_paths = ([] for i in range(3))
-        cfg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cfg"))
-        cdg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cdg"))
-        ddg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ddg"))
+        # temporary in case anything faild
         source = "1000101"
         # for source in source_nodes:
         # print("begin cfg")
-        for cfg_file in os.listdir(cfg_path_s):
-            if cfg_file.endswith(".dot"):
-                cfg_paths.extend(
-                    extract_cfg_paths(os.path.join(cfg_path_s, cfg_file), source,
-                                      splitToken, separator, upSymbol, downSymbol,
-                                      labelPlaceholder,
-                                      useParentheses)
-                )
-        auto_garbage_collect()
+        if "CFG" in include_paths:
+            cfg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cfg"))
+            for cfg_file in os.listdir(cfg_path_s):
+                if cfg_file.endswith(".dot"):
+                    cfg_paths.extend(
+                        extract_cfg_paths(os.path.join(cfg_path_s, cfg_file), source,
+                                          splitToken, separator, upSymbol, downSymbol,
+                                          labelPlaceholder,
+                                          useParentheses)
+                    )
+            auto_garbage_collect()
         # print("begin ddg")
-        for ddg_file in os.listdir(ddg_path_s):
-            if ddg_file.endswith(".dot"):
-                ddg_paths.extend(extract_ddg_paths(os.path.join(ddg_path_s, ddg_file), source,
-                                                   splitToken, separator, upSymbol, downSymbol,
-                                                   labelPlaceholder,
-                                                   useParentheses))
-        auto_garbage_collect()
+        if "DDG" in include_paths:
+            ddg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ddg"))
+            for ddg_file in os.listdir(ddg_path_s):
+                if ddg_file.endswith(".dot"):
+                    ddg_paths.extend(extract_ddg_paths(os.path.join(ddg_path_s, ddg_file), source,
+                                                       splitToken, separator, upSymbol, downSymbol,
+                                                       labelPlaceholder,
+                                                       useParentheses))
+            auto_garbage_collect()
         # print("begin cdg")
-        for cdg_file in os.listdir(cdg_path_s):
-            if cdg_file.endswith(".dot"):
-                cdg_paths.extend(extract_cdg_paths(os.path.join(cdg_path_s, cdg_file),
-                                                   splitToken, separator, upSymbol, downSymbol,
-                                                   labelPlaceholder,
-                                                   useParentheses))
-        auto_garbage_collect()
+        if "CDG" in include_paths:
+            cdg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cdg"))
+            for cdg_file in os.listdir(cdg_path_s):
+                if cdg_file.endswith(".dot"):
+                    cdg_paths.extend(extract_cdg_paths(os.path.join(cdg_path_s, cdg_file),
+                                                       splitToken, separator, upSymbol, downSymbol,
+                                                       labelPlaceholder,
+                                                       useParentheses))
+            auto_garbage_collect()
         # Select maxPathContexts number of path contexts randomly.
         with open('time.txt', 'a+') as fileO:
             fileO.write(str(time.time() - time_in) + "\n")

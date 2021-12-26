@@ -6,7 +6,6 @@ import ray
 from projectPreprocessor.process_files import *
 from pathExtractor.generate_dataset import *
 from output_formatter import *
-from ray_helper import *
 from questionary import Choice
 from pathlib import Path
 import configparser
@@ -29,6 +28,7 @@ numOfProcesses = psutil.cpu_count()
 num_cpus = psutil.cpu_count(logical=False)
 outputType = config['projectPreprocessor']['outputType']
 
+
 def checks():
     # if os.getuid() == 0:
     #     raise Exception("This program requires to be run as root but was called by " + getpass.getuser())
@@ -36,15 +36,15 @@ def checks():
         if which(dependency) is None:
             raise Exception("Check whether " + dependency + " is on PATH and marked as executable.")
     modules = set(x[1] for x in iter_modules())
-    with open(os.path.join(dirname, './requirements.txt'), 'r') as f:
-        for line in f:
+    with open(os.path.join(dirname, './requirements.txt'), 'r') as fr:
+        for line in fr:
             requirement = line.split("=")[0].strip()
             if requirement not in modules:
                 raise Exception("Missing dependency: " + requirement)
-    in_path = "./1_input"
     if not Path.exists(Path(os.path.join(dirname, in_path))):
         raise Exception("Missing input directory, please update config.ini")
-    if not questionary.confirm("Have you updated config with required details ?").ask():
+    if not questionary.confirm(
+            "Have you updated config with required details ? Also please manually clear the processed and output folder if fresh run").ask():
         raise Exception("Please update and confirm config file contents")
 
 
@@ -56,10 +56,10 @@ def divide(lst, n):
         return [lst]
 
 
-def getFileIndices(in_path, numOfProcesses):
+def get_file_indices(in_path_f, num_of_processes):
     # Divide the work between processes.
-    totalFiles = os.listdir(in_path)
-    return divide(totalFiles, numOfProcesses)
+    totalFiles = os.listdir(in_path_f)
+    return divide(totalFiles, num_of_processes)
 
 
 def pre_process():
@@ -89,7 +89,7 @@ def pre_process():
             rmtree(filename)
 
 
-def process(datasetName):
+def process(dataset_name, include_paths_l):
     maxPathContexts = config['pathExtractor'].getint('maxPathContexts')
     maxLength = config['pathExtractor'].getint('maxLength')
     maxWidth = config['pathExtractor'].getint('maxWidth')
@@ -102,10 +102,9 @@ def process(datasetName):
     labelPlaceholder = config['pathExtractor']['labelPlaceholder']
     useParentheses = config['pathExtractor'].getboolean('useParentheses')
     useCheckpoint = config['pathExtractor'].getboolean('useCheckpoint')
-    outputType = config['projectPreprocessor']['outputType']
 
     # Divide the work between processes.
-    processFileIndices = getFileIndices(os.path.join(process_path, datasetName), numOfProcesses)
+    processFileIndices = get_file_indices(os.path.join(process_path, dataset_name), numOfProcesses)
 
     # This is used to track what files were processed already by each process. Used in checkpointing.
     initialCount = 0
@@ -114,12 +113,12 @@ def process(datasetName):
         checkpointDict[processIndex] = set()
 
     # If the output files already exist, either use it as a checkpoint or don't continue the execution.
-    if os.path.isfile(os.path.join(process_path, datasetName, datasetName + ".c2v")):
+    if os.path.isfile(os.path.join(process_path, dataset_name, dataset_name + ".c2v")):
         if useCheckpoint:
             # print(datasetName + ".c2v file exists. Using it as a checkpoint ...")
 
-            with open(os.path.join(process_path, datasetName, datasetName + ".c2v"), 'r') as f:
-                for line in f:
+            with open(os.path.join(process_path, dataset_name, dataset_name + ".c2v"), 'r') as fc:
+                for line in fc:
                     if line.startswith("file:"):
                         fileIndex = line.strip('file:\n\t ')
                         for processIndex, filesRange in enumerate(processFileIndices):
@@ -134,17 +133,20 @@ def process(datasetName):
             sys.exit()
 
     # Create the argument collection, where each element contains the array of parameters for each process.
+    # noinspection PyTypeChecker
     ProcessArguments = (
-        [process_path, datasetName, outputType] + [FileIndices] + [checkpointDict[processIndex]] + [maxPathContexts,
-                                                                                                    maxLength,
-                                                                                                    maxWidth,
-                                                                                                    maxTreeSize,
-                                                                                                    maxFileSize,
-                                                                                                    splitToken,
-                                                                                                    separator, upSymbol,
-                                                                                                    downSymbol,
-                                                                                                    labelPlaceholder,
-                                                                                                    useParentheses]
+        [process_path, dataset_name, outputType] + [FileIndices] + [checkpointDict[processIndex]] + [maxPathContexts,
+                                                                                                     maxLength,
+                                                                                                     maxWidth,
+                                                                                                     maxTreeSize,
+                                                                                                     maxFileSize,
+                                                                                                     splitToken,
+                                                                                                     separator,
+                                                                                                     upSymbol,
+                                                                                                     downSymbol,
+                                                                                                     labelPlaceholder,
+                                                                                                     useParentheses,
+                                                                                                     include_paths_l]
         for
         processIndex, FileIndices in enumerate(processFileIndices))
 
@@ -168,10 +170,11 @@ def post_process(options):
     path_freq_dict = {}
     target_freq_dict = {}
 
-    include_paths = {'ast': "AST" in options, 'cfg': "CFG" in options, 'cdg': "CDG" in options, 'ddg': "DDG" in options}
+    include_paths_dict = {'ast': "AST" in options, 'cfg': "CFG" in options, 'cdg': "CDG" in options,
+                          'ddg': "DDG" in options}
     max_path_count = {'ast': 0, 'cfg': 0, 'cdg': 0, 'ddg': 0}
     dataset_name_ext = '_'.join(options)
-    datasets = [f.name for f in os.scandir("./2_processed") if f.is_dir()]
+    datasets = [folder.name for folder in os.scandir("./2_processed") if folder.is_dir()]
     not_include_methods = config['outputFormatter']['notIncludeMethods']
     not_include_methods = [method.strip() for method in not_include_methods.split(',')]
 
@@ -180,19 +183,20 @@ def post_process(options):
     max_path_count['cdg'] = config['outputFormatter'].getint('maxCDGPaths')
     max_path_count['ddg'] = config['outputFormatter'].getint('maxDDGPaths')
 
-    ## For normal Train-Test-Val split.
+    # For normal Train-Test-Val split.
     for dataset_name in datasets:
         try:
             destination_dir = os.path.join(output_dir, dataset_name, dataset_name_ext)
             data_path = os.path.join(process_path, dataset_name, dataset_name + ".c2v")
             os.makedirs(destination_dir, exist_ok=True)
 
-            ## Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
+            # Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
             num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name,
-                                                                                 "{}.c2v".format(dataset_name + '.full')),
+                                                                                 "{}.c2v".format(
+                                                                                     dataset_name + '.full')),
                                                          max_path_count, not_include_methods, hash_to_string_dict)
 
-            ## Shuffle the output file of above step.
+            # Shuffle the output file of above step.
             if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))):
                 # print("{} already exists!".format(
                 os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))
@@ -202,28 +206,29 @@ def post_process(options):
                     'terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(
                         output_dir=output_dir, dataset_name=dataset_name))
 
-            ## Splitting the joined and shuffled file into Train-Test-Val sets.
+            # Splitting the joined and shuffled file into Train-Test-Val sets.
             split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples)
 
-            ## Use "include_paths" to select specific type of paths.
+            # Use "include_paths" to select specific type of paths.
             filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)),
                          os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
                          os.path.join(output_dir, '{}.train.c2v'.format(dataset_name_ext)),
-                         include_paths, max_path_count)
+                         include_paths_dict, max_path_count)
             filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)),
                          os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                      os.path.join(output_dir, '{}.test.c2v'.format(dataset_name_ext)),
-                         include_paths, max_path_count)
+                         os.path.join(output_dir, '{}.test.c2v'.format(dataset_name_ext)),
+                         include_paths_dict, max_path_count)
             filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)),
                          os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                      os.path.join(output_dir, '{}.val.c2v'.format(dataset_name_ext)),
-                         include_paths, max_path_count)
+                         os.path.join(output_dir, '{}.val.c2v'.format(dataset_name_ext)),
+                         include_paths_dict, max_path_count)
 
-            ## Create dictionaries using training data.
-            create_dictionaries(os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                                token_freq_dict, path_freq_dict, target_freq_dict)
+            # Create dictionaries using training data.
+            create_dictionaries(
+                os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                token_freq_dict, path_freq_dict, target_freq_dict)
 
-            ## Save the dictionary file.
+            # Save the dictionary file.
             save_dictionaries(os.path.join(output_dir, '{}.dict.c2v'.format(dataset_name_ext)),
                               hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
                               round(num_examples * 0.89))
@@ -243,7 +248,7 @@ if __name__ == "__main__":
     ).ask()
     include_paths = questionary.checkbox(
         "Select paths to include",
-        choices=[Choice("AST", checked=True), Choice("CFG", checked=True), Choice("CDG", checked=False),
+        choices=[Choice("AST", checked=True, disabled="Yes"), Choice("CFG", checked=True), Choice("CDG", checked=False),
                  Choice("DDG", checked=True)],
     ).ask()
     if "Preprocess project" in joblist:
@@ -257,7 +262,7 @@ if __name__ == "__main__":
     if "Path extraction" in joblist:
         for f in os.scandir("./2_processed"):
             if f.is_dir():
-                process(f.name)
+                process(f.name, include_paths)
             if os.path.exists("time.txt"):
                 with open("time.txt", 'r') as f1:
                     fpm = 0
@@ -268,9 +273,9 @@ if __name__ == "__main__":
                         # total time for a dataset
                         total_time = total_time + float(time_used)
                     pass
-                with open('time_summary.txt', 'a+') as fileO:
+                with open(output_dir + '/' + 'time_summary.txt', 'a+') as fileO:
                     fileO.write(str(total_time) + " per_file->fpm " + str(fpm) + "\n")
-                os.rename('time.txt', f.name+'_time.txt')
+                os.rename('time.txt', output_dir + '/' + f.name + '_time.txt')
 
     if "Format output" in joblist:
         post_process(include_paths)
