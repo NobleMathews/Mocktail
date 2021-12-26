@@ -274,7 +274,7 @@ if __name__ == "__main__":
                         total_time = total_time + float(time_used)
                     pass
                 with open(output_dir + '/' + 'time_summary.txt', 'a+') as fileO:
-                    fileO.write(str(total_time) + " per_file->fpm " + str(fpm) + "\n")
+                    fileO.write(str(total_time) + " per_dataset->fpm " + str(fpm) + "\n")
                 os.rename('time.txt', output_dir + '/' + f.name + '_time.txt')
 
     if "Format output" in joblist:
