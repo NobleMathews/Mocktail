@@ -29,6 +29,10 @@ num_cpus = psutil.cpu_count(logical=False)
 outputType = config['projectPreprocessor']['outputType']
 generateAll = config['pathExtractor']['generateAll']
 
+train_split = config['projectPreprocessor']['train_split']
+test_split = config['projectPreprocessor']['test_split']
+val_split = config['projectPreprocessor']['val_split']
+
 
 def checks():
     # if os.getuid() == 0:
@@ -209,7 +213,7 @@ def post_process(options):
                         output_dir=output_dir, dataset_name=dataset_name))
 
             # Splitting the joined and shuffled file into Train-Test-Val sets.
-            split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples)
+            split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples, train_split, test_split, val_split)
 
             # Use "include_paths" to select specific type of paths.
             filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)),
@@ -234,7 +238,7 @@ def post_process(options):
             if outputType == "file":
                 save_dictionaries(os.path.join(output_dir, '{}.dict.c2v'.format(dataset_name_ext)),
                                   hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
-                                  round(num_examples * 0.89))
+                                  round(num_examples * train_split))
         except Exception as e:
             print(e)
 

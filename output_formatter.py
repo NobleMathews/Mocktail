@@ -75,7 +75,7 @@ def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_fr
     print('Dictionaries saved to: {}'.format(output_file))
 
 
-def split_dataset(output_dir, dataset_name, num_examples):
+def split_dataset(output_dir, dataset_name, num_examples, train_split, test_split, val_split):
     full_shuffled_file = os.path.join(output_dir, '{}.full.shuffled.c2v'.format(dataset_name))
     train_file = os.path.join(output_dir, '{}.train.c2v'.format(dataset_name))
     test_file = os.path.join(output_dir, '{}.test.c2v'.format(dataset_name))
@@ -84,10 +84,9 @@ def split_dataset(output_dir, dataset_name, num_examples):
     if os.path.isfile(train_file) and os.path.isfile(test_file) and os.path.isfile(val_file):
         print("Reusing the existing Train-Test-Val splits to generate dataset ..")
         return
-    # [TODO] change into parameters
-    train_index = round(num_examples * 0.89)
-    val_index = round(num_examples * 0.035) + train_index
-    test_index = round(num_examples * 0.075) + val_index
+    train_index = round(num_examples * train_split)
+    val_index = round(num_examples * val_split) + train_index
+    test_index = round(num_examples * test_split) + val_index
     print("Total number of Train Examples: ", train_index)
     print("Total number of Val Examples: ", val_index - train_index)
     print("Total number of Test Examples: ", test_index - val_index)
