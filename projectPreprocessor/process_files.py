@@ -44,10 +44,8 @@ def split_files_into_functions_multiple(in_path, out_path, maxFileSize):
         for root, dirs, files in os.walk(os.path.join(in_path, dir)):
             for file in files:
                 in_file_path = os.path.join(root, file)
-
                 code = preprocess_cfile(in_file_path)
                 functions = extract_functions_from_file(code)
-                
                 for function in functions:
                     # print(i, in_file_path)
             

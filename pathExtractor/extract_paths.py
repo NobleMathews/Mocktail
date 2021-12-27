@@ -14,10 +14,10 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     try:
         ast = nx.DiGraph(nx.drawing.nx_pydot.read_dot(ast_path))
     except:
-        return []
+        return "", []
 
     if ast.number_of_nodes() > maxTreeSize or ast.number_of_nodes() == 0:
-        return []
+        return "", []
 
     nx.set_node_attributes(ast, [], 'pathPieces')
 
@@ -39,7 +39,7 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
         normalizedLabel = normalizeAst(ast, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
         for currentNode in postOrder:
             if timer() - start > timeout_duration:
-                return []
+                return "", []
             if not list(ast.successors(currentNode)):  # List is empty i.e node is leaf
                 attributes = ast.nodes[currentNode]['label'][2:-2].split(',')
                 attributes = [attr.strip() for attr in attributes]
@@ -73,7 +73,7 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     # for path in paths:
     #     print(path)
 
-    return paths
+    return normalizedLabel, paths
 
 
 def extract_cfg_paths(cfg_path, source_nodes, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',

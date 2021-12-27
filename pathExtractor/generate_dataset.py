@@ -24,7 +24,7 @@ def auto_garbage_collect(pct=15.0):
 @ray.remote
 def generate_dataset(params):
     in_path, datasetName, outputType, fileIndices, checkpointSet, \
-    maxPathContexts, maxLength, maxWidth, maxTreeSize, maxFileSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses, include_paths = params
+    maxPathContexts, maxLength, maxWidth, maxTreeSize, maxFileSize, splitToken, separator, upSymbol, downSymbol, labelPlaceholder, useParentheses, generateAll, include_paths = params
 
     # Create temporary working directories.
     workingDir = os.path.abspath("_temp_dir_" + str(os.getpid()))
@@ -61,11 +61,11 @@ def generate_dataset(params):
         preventOut = " >/dev/null 2>&1"
         os.system("joern-parse workspace" + preventOut)
         os.system("joern-export --repr ast --out " + os.path.join("outdir", "ast") + preventOut)
-        if "CFG" in include_paths:
+        if generateAll or "CFG" in include_paths:
             os.system("joern-export --repr cfg --out " + os.path.join("outdir", "cfg") + preventOut)
-        if "CDG" in include_paths:
+        if generateAll or "CDG" in include_paths:
             os.system("joern-export --repr cdg --out " + os.path.join("outdir", "cdg") + preventOut)
-        if "DDG" in include_paths:
+        if generateAll or "DDG" in include_paths:
             os.system("joern-export --repr ddg --out " + os.path.join("outdir", "ddg") + preventOut)
         # print("end joern")
         # print("begin dot cleanup")
@@ -86,11 +86,11 @@ def generate_dataset(params):
         for ast_file in os.listdir(ast_path_s):
             if ast_file.endswith(".dot"):
                 auto_garbage_collect()
-                # label, ast_path =
-                ast_paths.extend(extract_ast_paths(os.path.join(ast_path_s, ast_file), maxLength,
-                                                   maxWidth, maxTreeSize, splitToken, separator,
-                                                   upSymbol, downSymbol, labelPlaceholder,
-                                                   useParentheses))
+                label, ast_path = extract_ast_paths(os.path.join(ast_path_s, ast_file), maxLength,
+                                                                   maxWidth, maxTreeSize, splitToken, separator,
+                                                                   upSymbol, downSymbol, labelPlaceholder,
+                                                                   useParentheses)
+                ast_paths.extend(ast_path)
                 # source_nodes.extend(source_node)
         # print("end ast checks")
         # If no paths are generated, Reset and continue.
@@ -106,7 +106,7 @@ def generate_dataset(params):
         source = "1000101"
         # for source in source_nodes:
         # print("begin cfg")
-        if "CFG" in include_paths:
+        if generateAll or "CFG" in include_paths:
             cfg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cfg"))
             for cfg_file in os.listdir(cfg_path_s):
                 if cfg_file.endswith(".dot"):
@@ -118,7 +118,7 @@ def generate_dataset(params):
                     )
             auto_garbage_collect()
         # print("begin ddg")
-        if "DDG" in include_paths:
+        if generateAll or "DDG" in include_paths:
             ddg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ddg"))
             for ddg_file in os.listdir(ddg_path_s):
                 if ddg_file.endswith(".dot"):
@@ -128,7 +128,7 @@ def generate_dataset(params):
                                                        useParentheses))
             auto_garbage_collect()
         # print("begin cdg")
-        if "CDG" in include_paths:
+        if generateAll or "CDG" in include_paths:
             cdg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cdg"))
             for cdg_file in os.listdir(cdg_path_s):
                 if cdg_file.endswith(".dot"):

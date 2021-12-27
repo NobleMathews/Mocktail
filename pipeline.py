@@ -27,6 +27,7 @@ output_dir = "./3_output"
 numOfProcesses = psutil.cpu_count()
 num_cpus = psutil.cpu_count(logical=False)
 outputType = config['projectPreprocessor']['outputType']
+generateAll = config['pathExtractor']['generateAll']
 
 
 def checks():
@@ -146,6 +147,7 @@ def process(dataset_name, include_paths_l):
                                                                                                      downSymbol,
                                                                                                      labelPlaceholder,
                                                                                                      useParentheses,
+                                                                                                     generateAll,
                                                                                                      include_paths_l]
         for
         processIndex, FileIndices in enumerate(processFileIndices))
