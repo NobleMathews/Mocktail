@@ -84,7 +84,7 @@ def split_dataset(output_dir, dataset_name, num_examples):
     if os.path.isfile(train_file) and os.path.isfile(test_file) and os.path.isfile(val_file):
         print("Reusing the existing Train-Test-Val splits to generate dataset ..")
         return
-
+    # [TODO] change into parameters
     train_index = round(num_examples * 0.89)
     val_index = round(num_examples * 0.035) + train_index
     test_index = round(num_examples * 0.075) + val_index
@@ -106,56 +106,57 @@ def split_dataset(output_dir, dataset_name, num_examples):
                             fo2.write(line)
 
 
-def filter_paths(input_file, output_file, collate_file, include_paths, max_path_count):
+def filter_paths(input_file, output_file, collate_file, include_paths, max_path_count, outputType):
     if os.path.isfile(output_file):
         print("{} already exists!".format(output_file))
         return
 
     total_valid_examples = 0
     with open(output_file, 'a', encoding="utf-8") as fout:
-        with open(collate_file, 'a', encoding="utf-8") as cout:
-            with open(input_file, 'r', encoding="utf-8") as fin:
-                for line in fin:
-                    fields = line.strip('\n').split(' ')
-                    label = fields[0]
-                    ast_paths = fields[1: (max_path_count['ast'] + 1)]
-                    cfg_paths = fields[(max_path_count['ast'] + 1): (max_path_count['ast'] + max_path_count['cfg'] + 1)]
-                    cdg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + 1): (
-                                max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1)]
-                    ddg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1): (
-                                max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + max_path_count[
-                            'ddg'] + 1)]
+        with open(input_file, 'r', encoding="utf-8") as fin:
+            for line in fin:
+                fields = line.strip('\n').split(' ')
+                label = fields[0]
+                ast_paths = fields[1: (max_path_count['ast'] + 1)]
+                cfg_paths = fields[(max_path_count['ast'] + 1): (max_path_count['ast'] + max_path_count['cfg'] + 1)]
+                cdg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + 1): (
+                            max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1)]
+                ddg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1): (
+                            max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + max_path_count[
+                        'ddg'] + 1)]
 
-                    valid_example = True
-                    output = label
-                    if include_paths['ast'] and valid_example:
-                        if ast_paths[0] == '':
-                            valid_example = False
+                valid_example = True
+                output = label
+                if include_paths['ast'] and valid_example:
+                    if ast_paths[0] == '':
+                        valid_example = False
 
-                        output += (' ' + ' '.join(ast_paths))
+                    output += (' ' + ' '.join(ast_paths))
 
-                    if include_paths['cfg'] and valid_example:
-                        if cfg_paths[0] == '':
-                            valid_example = False
+                if include_paths['cfg'] and valid_example:
+                    if cfg_paths[0] == '':
+                        valid_example = False
 
-                        output += (' ' + ' '.join(cfg_paths))
+                    output += (' ' + ' '.join(cfg_paths))
 
-                    if include_paths['cdg'] and valid_example:
-                        if cdg_paths[0] == '':
-                            valid_example = False
+                if include_paths['cdg'] and valid_example:
+                    if cdg_paths[0] == '':
+                        valid_example = False
 
-                        output += (' ' + ' '.join(cdg_paths))
+                    output += (' ' + ' '.join(cdg_paths))
 
-                    if include_paths['ddg'] and valid_example:
-                        if ddg_paths[0] == '':
-                            valid_example = False
+                if include_paths['ddg'] and valid_example:
+                    if ddg_paths[0] == '':
+                        valid_example = False
 
-                        output += (' ' + ' '.join(ddg_paths))
+                    output += (' ' + ' '.join(ddg_paths))
 
-                    if valid_example:
-                        fout.write(output+'\n')
-                        cout.write(output+'\n')
-                        total_valid_examples += 1
+                if valid_example:
+                    fout.write(output+'\n')
+                    if outputType == "file":
+                        with open(collate_file, 'a', encoding="utf-8") as cout:
+                            cout.write(output+'\n')
+                    total_valid_examples += 1
 
     print("Number of Valid Examples in {file}: {count}".format(file=output_file, count=total_valid_examples))
 

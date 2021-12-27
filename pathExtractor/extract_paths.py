@@ -8,7 +8,7 @@ max_length = 100
 max_child = 50
 
 
-def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitToken=False, separator='|', upSymbol='↑',
+def extract_ast_paths(ast_path, graph_name, maxLength=8, maxWidth=2, maxTreeSize=200, splitToken=False, separator='|', upSymbol='↑',
                       downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
     start = timer()
     try:
@@ -36,15 +36,14 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     for source in source_nodes:
         postOrder = list(nx.dfs_postorder_nodes(ast, source=source))
 
-        normalizedLabel = normalizeAst(ast, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
+        normalizedLabel = normalizeAst(ast, graph_name, postOrder, splitToken, separator, labelPlaceholder, useParentheses)
         for currentNode in postOrder:
             if timer() - start > timeout_duration:
                 return "", []
             if not list(ast.successors(currentNode)):  # List is empty i.e node is leaf
                 attributes = ast.nodes[currentNode]['label'][2:-2].split(',')
                 attributes = [attr.strip() for attr in attributes]
-                if len(attributes) > 1 and attributes[
-                    1]:  # attribute[1] is token of the leaf node. If the token is not empty.
+                if len(attributes) > 1 and attributes[1]:  # attribute[1] is token of the leaf node. If the token is not empty.
                     ast.nodes[currentNode]['pathPieces'] = [[currentNode]]
             else:
                 # Creates a list of pathPieces per child i.e. list(list(list(nodes))) <--> list(list(pathPieces)) <--> list(PathPieces per child)
@@ -76,7 +75,7 @@ def extract_ast_paths(ast_path, maxLength=8, maxWidth=2, maxTreeSize=200, splitT
     return normalizedLabel, paths
 
 
-def extract_cfg_paths(cfg_path, source_nodes, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
+def extract_cfg_paths(cfg_path, graph_name,  source_nodes, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
                       labelPlaceholder='<SELF>', useParentheses=True):
     try:
         cfg = nx.DiGraph(nx.drawing.nx_pydot.read_dot(cfg_path))
@@ -96,7 +95,7 @@ def extract_cfg_paths(cfg_path, source_nodes, splitToken=False, separator='|', u
     # for source in selected_nodes:
     start = timer()
     paths.extend(
-        traverse_cfg_paths(start, cfg, source, paths.copy(), Visited.copy(), "", splitToken, separator, upSymbol,
+        traverse_cfg_paths(start, cfg, graph_name, source, paths.copy(), Visited.copy(), "", splitToken, separator, upSymbol,
                            downSymbol, labelPlaceholder, useParentheses))
 
     # print('\ncfg:')
@@ -106,9 +105,9 @@ def extract_cfg_paths(cfg_path, source_nodes, splitToken=False, separator='|', u
     return paths
 
 
-def traverse_cfg_paths(start, cfg, node, path, Visited, start_token="", splitToken=False, separator='|', upSymbol='↑',
+def traverse_cfg_paths(start, cfg, graph_name, node, path, Visited, start_token="", splitToken=False, separator='|', upSymbol='↑',
                        downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
-    attributes = normalizeNode(cfg, node, splitToken, separator, labelPlaceholder, useParentheses)
+    attributes = normalizeNode(cfg, graph_name, node, splitToken, separator, labelPlaceholder, useParentheses)
     if path:
         path.append(downSymbol + attributes[0])
     else:
@@ -126,11 +125,11 @@ def traverse_cfg_paths(start, cfg, node, path, Visited, start_token="", splitTok
     if children:
         for child in children:
             if child not in Visited and len(child_paths) < max_child:
-                child_paths += traverse_cfg_paths(start, cfg, child, path.copy(), Visited.copy(), start_token,
+                child_paths += traverse_cfg_paths(start, cfg, graph_name, child, path.copy(), Visited.copy(), start_token,
                                                   splitToken,
                                                   separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
             else:
-                attributes = normalizeNode(cfg, child, splitToken, separator, labelPlaceholder, useParentheses)
+                attributes = normalizeNode(cfg, graph_name, child, splitToken, separator, labelPlaceholder, useParentheses)
                 child_paths.append((start_token, ''.join(path + [upSymbol + attributes[0]]), attributes[1]))
     else:
         return [(start_token, ''.join(path), attributes[1])]
@@ -138,7 +137,7 @@ def traverse_cfg_paths(start, cfg, node, path, Visited, start_token="", splitTok
     return child_paths
 
 
-def extract_cdg_paths(cdg_path, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
+def extract_cdg_paths(cdg_path, graph_name, splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
                       labelPlaceholder='<SELF>', useParentheses=True):
     try:
         cdg = nx.DiGraph(nx.drawing.nx_pydot.read_dot(cdg_path))
@@ -155,7 +154,7 @@ def extract_cdg_paths(cdg_path, splitToken=False, separator='|', upSymbol='↑',
     paths = []
     Visited = []
     start = timer()
-    paths = traverse_cdg_paths(start, cdg, root, paths, Visited, "", splitToken, separator, upSymbol, downSymbol,
+    paths = traverse_cdg_paths(start, cdg, graph_name, root, paths, Visited, "", splitToken, separator, upSymbol, downSymbol,
                                labelPlaceholder, useParentheses)
 
     # print("\ncdg:")
@@ -165,9 +164,9 @@ def extract_cdg_paths(cdg_path, splitToken=False, separator='|', upSymbol='↑',
     return paths
 
 
-def traverse_cdg_paths(start, cdg, node, path, Visited, start_token="", splitToken=False, separator='|', upSymbol='↑',
+def traverse_cdg_paths(start, cdg, graph_name, node, path, Visited, start_token="", splitToken=False, separator='|', upSymbol='↑',
                        downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
-    attributes = normalizeNode(cdg, node, splitToken, separator, labelPlaceholder, useParentheses)
+    attributes = normalizeNode(cdg, graph_name, node, splitToken, separator, labelPlaceholder, useParentheses)
     if path:
         path.append(downSymbol + attributes[0])
     else:
@@ -183,11 +182,11 @@ def traverse_cdg_paths(start, cdg, node, path, Visited, start_token="", splitTok
     if children:
         for child in children:
             if child not in Visited and len(child_paths) < max_child:
-                child_paths += traverse_cdg_paths(start, cdg, child, path.copy(), Visited.copy(), start_token,
+                child_paths += traverse_cdg_paths(start, cdg, graph_name, child, path.copy(), Visited.copy(), start_token,
                                                   splitToken,
                                                   separator, upSymbol, downSymbol, labelPlaceholder, useParentheses)
             else:
-                attributes = normalizeNode(cdg, child, splitToken, separator, labelPlaceholder, useParentheses)
+                attributes = normalizeNode(cdg, graph_name, child, splitToken, separator, labelPlaceholder, useParentheses)
                 child_paths.append((start_token, ''.join(path + [upSymbol + attributes[0]]), attributes[1]))
     else:
         return [(start_token, ''.join(path), attributes[1])]
@@ -195,7 +194,7 @@ def traverse_cdg_paths(start, cdg, node, path, Visited, start_token="", splitTok
     return child_paths
 
 
-def extract_ddg_paths(ddg_path, source="1000101", splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
+def extract_ddg_paths(ddg_path, graph_name,  source="1000101", splitToken=False, separator='|', upSymbol='↑', downSymbol='↓',
                       labelPlaceholder='<SELF>', useParentheses=True):
     try:
         ddg = nx.MultiDiGraph(nx.drawing.nx_pydot.read_dot(ddg_path))
@@ -206,7 +205,7 @@ def extract_ddg_paths(ddg_path, source="1000101", splitToken=False, separator='|
     paths = []
     Visited = []
     start = timer()
-    paths = traverse_ddg_paths(start, ddg, source, paths.copy(), Visited.copy(), "", "", splitToken, separator,
+    paths = traverse_ddg_paths(start, ddg, graph_name, source, paths.copy(), Visited.copy(), "", "", splitToken, separator,
                                upSymbol,
                                downSymbol, labelPlaceholder, useParentheses)
     paths = list(set([path for path in paths]))
@@ -218,9 +217,9 @@ def extract_ddg_paths(ddg_path, source="1000101", splitToken=False, separator='|
     return paths
 
 
-def traverse_ddg_paths(start, ddg, node, path, Visited, start_token="", edge_label="", splitToken=False, separator='|',
+def traverse_ddg_paths(start, ddg, graph_name, node, path, Visited, start_token="", edge_label="", splitToken=False, separator='|',
                        upSymbol='↑', downSymbol='↓', labelPlaceholder='<SELF>', useParentheses=True):
-    attributes = normalizeNode(ddg, node, splitToken, separator, labelPlaceholder, useParentheses)
+    attributes = normalizeNode(ddg, graph_name, node, splitToken, separator, labelPlaceholder, useParentheses)
     if path:
         path.append(downSymbol + attributes[0])
     else:
@@ -239,15 +238,15 @@ def traverse_ddg_paths(start, ddg, node, path, Visited, start_token="", edge_lab
             if edge_label == "" or edge_label == None or edge_label in edge[2] or edge[2] in edge_label:
                 if edge[1] not in Visited  and len(child_paths) < max_child:
                     if edge_label == "" or edge_label == None or edge[2] in edge_label:
-                        child_paths += traverse_ddg_paths(start, ddg, edge[1], path.copy(), Visited.copy(), start_token,
+                        child_paths += traverse_ddg_paths(start, ddg, graph_name, edge[1], path.copy(), Visited.copy(), start_token,
                                                           edge[2], splitToken, separator, upSymbol, downSymbol,
                                                           labelPlaceholder, useParentheses)
                     elif edge_label in edge[2]:
-                        child_paths += traverse_ddg_paths(start, ddg, edge[1], path.copy(), Visited.copy(), start_token,
+                        child_paths += traverse_ddg_paths(start, ddg, graph_name, edge[1], path.copy(), Visited.copy(), start_token,
                                                           edge_label, splitToken, separator, upSymbol, downSymbol,
                                                           labelPlaceholder, useParentheses)
                 else:
-                    attributes = normalizeNode(ddg, edge[1], splitToken, separator, labelPlaceholder, useParentheses)
+                    attributes = normalizeNode(ddg, graph_name, edge[1], splitToken, separator, labelPlaceholder, useParentheses)
                     child_paths.append((start_token, ''.join(path + [upSymbol + attributes[0]]), attributes[1]))
     else:
         return [(start_token, ''.join(path), attributes[1])]

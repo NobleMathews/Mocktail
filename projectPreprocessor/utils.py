@@ -52,6 +52,7 @@ def extract_functions_from_file(code):
                 'CASE']
 
     functions = []
+    names = []
     for match in re.finditer(rproc, code, re.DOTALL):
         if match.group(5) not in cppwords:
             wait_char = ''
@@ -95,5 +96,5 @@ def extract_functions_from_file(code):
                 # function = match.group(1) + body
                 function = header + body  # This is done not to include the class name in function header (For C++ functions).
                 functions.append(function)
-
-    return functions
+                names.append(match.group(5))
+    return names, functions

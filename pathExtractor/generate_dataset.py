@@ -44,7 +44,6 @@ def generate_dataset(params):
         # Create environment for joern.
         file_name = fileIndex
         in_file_path = os.path.join(in_path, datasetName, file_name)
-
         # # If the file is not in dataset as a c file, continue.
         # if not os.path.isfile(in_file_path):
         #     continue
@@ -83,10 +82,11 @@ def generate_dataset(params):
         # source_nodes = []
         # print("begin ast check")
         ast_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ast"))
+        graph_name = (file_name.split("_mocktail_"))[0]
         for ast_file in os.listdir(ast_path_s):
             if ast_file.endswith(".dot"):
                 auto_garbage_collect()
-                label, ast_path = extract_ast_paths(os.path.join(ast_path_s, ast_file), maxLength,
+                label, ast_path = extract_ast_paths(os.path.join(ast_path_s, ast_file), graph_name, maxLength,
                                                                    maxWidth, maxTreeSize, splitToken, separator,
                                                                    upSymbol, downSymbol, labelPlaceholder,
                                                                    useParentheses)
@@ -111,7 +111,7 @@ def generate_dataset(params):
             for cfg_file in os.listdir(cfg_path_s):
                 if cfg_file.endswith(".dot"):
                     cfg_paths.extend(
-                        extract_cfg_paths(os.path.join(cfg_path_s, cfg_file), source,
+                        extract_cfg_paths(os.path.join(cfg_path_s, cfg_file), graph_name, source,
                                           splitToken, separator, upSymbol, downSymbol,
                                           labelPlaceholder,
                                           useParentheses)
@@ -122,7 +122,7 @@ def generate_dataset(params):
             ddg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ddg"))
             for ddg_file in os.listdir(ddg_path_s):
                 if ddg_file.endswith(".dot"):
-                    ddg_paths.extend(extract_ddg_paths(os.path.join(ddg_path_s, ddg_file), source,
+                    ddg_paths.extend(extract_ddg_paths(os.path.join(ddg_path_s, ddg_file), graph_name, source,
                                                        splitToken, separator, upSymbol, downSymbol,
                                                        labelPlaceholder,
                                                        useParentheses))
@@ -132,7 +132,7 @@ def generate_dataset(params):
             cdg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cdg"))
             for cdg_file in os.listdir(cdg_path_s):
                 if cdg_file.endswith(".dot"):
-                    cdg_paths.extend(extract_cdg_paths(os.path.join(cdg_path_s, cdg_file),
+                    cdg_paths.extend(extract_cdg_paths(os.path.join(cdg_path_s, cdg_file), graph_name,
                                                        splitToken, separator, upSymbol, downSymbol,
                                                        labelPlaceholder,
                                                        useParentheses))
