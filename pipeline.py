@@ -77,7 +77,7 @@ def pre_process():
         if outputType == "multiple":
             split_files_into_functions_multiple(intermediate_path, process_path, maxFileSize)
         elif outputType == "single":
-            split_files_into_functions_single(intermediate_path, process_path, maxFileSize)
+            split_files_into_functions_single(intermediate_path, os.path.join(process_path,"single"), maxFileSize)
         elif outputType == "file":
             filter_files(in_path, process_path)
 
@@ -215,15 +215,15 @@ def post_process(options):
             filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)),
                          os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
                          os.path.join(output_dir, '{}.train.c2v'.format(dataset_name_ext)),
-                         include_paths_dict, max_path_count)
+                         include_paths_dict, max_path_count, outputType)
             filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)),
                          os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)),
                          os.path.join(output_dir, '{}.test.c2v'.format(dataset_name_ext)),
-                         include_paths_dict, max_path_count)
+                         include_paths_dict, max_path_count, outputType)
             filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)),
                          os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)),
                          os.path.join(output_dir, '{}.val.c2v'.format(dataset_name_ext)),
-                         include_paths_dict, max_path_count)
+                         include_paths_dict, max_path_count, outputType)
 
             # Create dictionaries using training data.
             create_dictionaries(
@@ -231,9 +231,10 @@ def post_process(options):
                 token_freq_dict, path_freq_dict, target_freq_dict)
 
             # Save the dictionary file.
-            save_dictionaries(os.path.join(output_dir, '{}.dict.c2v'.format(dataset_name_ext)),
-                              hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
-                              round(num_examples * 0.89))
+            if outputType == "file":
+                save_dictionaries(os.path.join(output_dir, '{}.dict.c2v'.format(dataset_name_ext)),
+                                  hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
+                                  round(num_examples * 0.89))
         except Exception as e:
             print(e)
 

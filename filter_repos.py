@@ -51,7 +51,7 @@ def clone_repos(filename="repos.json", repoStartIndex=0, repoEndIndex=9):
             repoCount += 1
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # Stars C:
     # print(json.dumps(get_top_repos(35, 200), indent=4))
 
