@@ -27,11 +27,10 @@ output_dir = "./3_output"
 numOfProcesses = psutil.cpu_count()
 num_cpus = psutil.cpu_count(logical=False)
 outputType = config['projectPreprocessor']['outputType']
-generateAll = config['pathExtractor']['generateAll']
-
-train_split = config['projectPreprocessor']['train_split']
-test_split = config['projectPreprocessor']['test_split']
-val_split = config['projectPreprocessor']['val_split']
+generateAll = config['pathExtractor'].getboolean('generateAll')
+train_split = config['outputFormatter'].getfloat('train_split')
+test_split = config['outputFormatter'].getfloat('test_split')
+val_split = config['outputFormatter'].getfloat('val_split')
 
 
 def checks():

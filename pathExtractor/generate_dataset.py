@@ -100,13 +100,13 @@ def generate_dataset(params):
             for folder in os.listdir(os.path.join(workingDir, "outdir")):
                 rmtree(os.path.join(workingDir, "outdir", folder))
             continue
-        print("begin cfg cdg and ddg")
+        # print("begin cfg cdg and ddg")
         cfg_paths, cdg_paths, ddg_paths = ([] for i in range(3))
         # temporary in case anything faild
         source = "1000101"
         # for source in source_nodes:
-        # print("begin cfg")
         if generateAll or "CFG" in include_paths:
+            print("begin cfg")
             cfg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cfg"))
             for cfg_file in os.listdir(cfg_path_s):
                 if cfg_file.endswith(".dot"):
@@ -117,8 +117,8 @@ def generate_dataset(params):
                                           useParentheses)
                     )
             auto_garbage_collect()
-        # print("begin ddg")
         if generateAll or "DDG" in include_paths:
+            print("begin ddg")
             ddg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "ddg"))
             for ddg_file in os.listdir(ddg_path_s):
                 if ddg_file.endswith(".dot"):
@@ -127,8 +127,8 @@ def generate_dataset(params):
                                                        labelPlaceholder,
                                                        useParentheses))
             auto_garbage_collect()
-        # print("begin cdg")
         if generateAll or "CDG" in include_paths:
+            print("begin cdg")
             cdg_path_s = os.path.relpath(os.path.join(workingDir, "outdir", "cdg"))
             for cdg_file in os.listdir(cdg_path_s):
                 if cdg_file.endswith(".dot"):
