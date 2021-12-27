@@ -160,7 +160,7 @@ def generate_dataset(params):
         # Storing the extracted paths in files.
         if outputType == "file":
             label = datasetName
-        print("SUCESS PATH SAVED TO C2V FILE")
+        print("SUCESS PATH SAVED TO TXT FILE")
         store_paths(label, file_name, datasetName, ast_paths, cfg_paths, cdg_paths, ddg_paths)
 
         # Remove the current file, and ast, cfg, pdg folder after processing current sample. Otherwise, joern will bail out.

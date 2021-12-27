@@ -4,4 +4,4 @@ Dataset
 processedDataset*
 *.ipynb
 *.json
-*.c2v
+*.txt

@@ -118,11 +118,11 @@ def process(dataset_name, include_paths_l):
         checkpointDict[processIndex] = set()
 
     # If the output files already exist, either use it as a checkpoint or don't continue the execution.
-    if os.path.isfile(os.path.join(process_path, dataset_name, dataset_name + ".c2v")):
+    if os.path.isfile(os.path.join(process_path, dataset_name, dataset_name + ".txt")):
         if useCheckpoint:
-            # print(datasetName + ".c2v file exists. Using it as a checkpoint ...")
+            # print(datasetName + ".txt file exists. Using it as a checkpoint ...")
 
-            with open(os.path.join(process_path, dataset_name, dataset_name + ".c2v"), 'r') as fc:
+            with open(os.path.join(process_path, dataset_name, dataset_name + ".txt"), 'r') as fc:
                 for line in fc:
                     if line.startswith("file:"):
                         fileIndex = line.strip('file:\n\t ')
@@ -134,7 +134,7 @@ def process(dataset_name, include_paths_l):
             initialCount += 1
 
         else:
-            # print(datasetName + ".c2v file already exist. Exiting ...")
+            # print(datasetName + ".txt file already exist. Exiting ...")
             sys.exit()
 
     # Create the argument collection, where each element contains the array of parameters for each process.
@@ -193,50 +193,50 @@ def post_process(options):
     for dataset_name in datasets:
         try:
             destination_dir = os.path.join(output_dir, dataset_name, dataset_name_ext)
-            data_path = os.path.join(process_path, dataset_name, dataset_name + ".c2v")
+            data_path = os.path.join(process_path, dataset_name, dataset_name + ".txt")
             os.makedirs(destination_dir, exist_ok=True)
 
             # Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
             num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name,
-                                                                                 "{}.c2v".format(
+                                                                                 "{}.txt".format(
                                                                                      dataset_name + '.full')),
                                                          max_path_count, not_include_methods, hash_to_string_dict)
 
             # Shuffle the output file of above step.
-            if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))):
+            if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.txt'.format(dataset_name))):
                 # print("{} already exists!".format(
-                os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))
+                os.path.join(output_dir, dataset_name, '{}.full.shuffled.txt'.format(dataset_name))
                 #     ))
             else:
                 os.system(
-                    'terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(
+                    'terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.txt > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.txt'.format(
                         output_dir=output_dir, dataset_name=dataset_name))
 
             # Splitting the joined and shuffled file into Train-Test-Val sets.
             split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples, train_split, test_split, val_split)
 
             # Use "include_paths" to select specific type of paths.
-            filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)),
-                         os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                         os.path.join(output_dir, '{}.train.c2v'.format(dataset_name_ext)),
+            filter_paths(os.path.join(output_dir, dataset_name, '{}.train.txt'.format(dataset_name)),
+                         os.path.join(destination_dir, '{}.train.txt'.format(dataset_name + '_' + dataset_name_ext)),
+                         os.path.join(output_dir, '{}.train.txt'.format(dataset_name_ext)),
                          include_paths_dict, max_path_count, outputType)
-            filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)),
-                         os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                         os.path.join(output_dir, '{}.test.c2v'.format(dataset_name_ext)),
+            filter_paths(os.path.join(output_dir, dataset_name, '{}.test.txt'.format(dataset_name)),
+                         os.path.join(destination_dir, '{}.test.txt'.format(dataset_name + '_' + dataset_name_ext)),
+                         os.path.join(output_dir, '{}.test.txt'.format(dataset_name_ext)),
                          include_paths_dict, max_path_count, outputType)
-            filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)),
-                         os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)),
-                         os.path.join(output_dir, '{}.val.c2v'.format(dataset_name_ext)),
+            filter_paths(os.path.join(output_dir, dataset_name, '{}.val.txt'.format(dataset_name)),
+                         os.path.join(destination_dir, '{}.val.txt'.format(dataset_name + '_' + dataset_name_ext)),
+                         os.path.join(output_dir, '{}.val.txt'.format(dataset_name_ext)),
                          include_paths_dict, max_path_count, outputType)
 
             # Create dictionaries using training data.
             create_dictionaries(
-                os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)),
+                os.path.join(destination_dir, '{}.train.txt'.format(dataset_name + '_' + dataset_name_ext)),
                 token_freq_dict, path_freq_dict, target_freq_dict)
 
             # Save the dictionary file.
             if outputType == "file":
-                save_dictionaries(os.path.join(output_dir, '{}.dict.c2v'.format(dataset_name_ext)),
+                save_dictionaries(os.path.join(output_dir, '{}.dict.txt'.format(dataset_name_ext)),
                                   hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
                                   round(num_examples * train_split))
         except Exception as e:

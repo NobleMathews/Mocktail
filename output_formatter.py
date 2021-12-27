@@ -68,7 +68,7 @@ def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_fr
         pickle.dump({k: token_freq_dict_old.get(k, 0) + target_freq_dict.get(k, 0) for k in set(target_freq_dict_old) | set(target_freq_dict)}, f)
         pickle.dump(count + num_training_examples, f)
 
-    # with open("path_dict.c2v", 'w', encoding="utf-8") as f:
+    # with open("path_dict.txt", 'w', encoding="utf-8") as f:
     #     for hashed_path, context_path in hash_to_string_dict.items():
     #         f.write(hashed_path + '\t' + context_path + '\n')
 
@@ -76,10 +76,10 @@ def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_fr
 
 
 def split_dataset(output_dir, dataset_name, num_examples, train_split, test_split, val_split):
-    full_shuffled_file = os.path.join(output_dir, '{}.full.shuffled.c2v'.format(dataset_name))
-    train_file = os.path.join(output_dir, '{}.train.c2v'.format(dataset_name))
-    test_file = os.path.join(output_dir, '{}.test.c2v'.format(dataset_name))
-    val_file = os.path.join(output_dir, '{}.val.c2v'.format(dataset_name))
+    full_shuffled_file = os.path.join(output_dir, '{}.full.shuffled.txt'.format(dataset_name))
+    train_file = os.path.join(output_dir, '{}.train.txt'.format(dataset_name))
+    test_file = os.path.join(output_dir, '{}.test.txt'.format(dataset_name))
+    val_file = os.path.join(output_dir, '{}.val.txt'.format(dataset_name))
 
     if os.path.isfile(train_file) and os.path.isfile(test_file) and os.path.isfile(val_file):
         print("Reusing the existing Train-Test-Val splits to generate dataset ..")
@@ -308,31 +308,31 @@ def convert_to_model_input_format(input_file, output_file, max_paths, not_includ
 #     ## For normal Train-Test-Val split.
 #     for dataset_name in datasets:
 #         destination_dir = os.path.join(output_dir, dataset_name, dataset_name_ext)
-#         data_path = os.path.join(input_dir, dataset_name + ".c2v")
+#         data_path = os.path.join(input_dir, dataset_name + ".txt")
 #         os.makedirs(destination_dir, exist_ok=True)
 
 #         ## Convert the input data file into model input format. Takes only "max_path_count" number of paths for each type. Removes the "not_include_methods" methods.
-#         num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name, "{}.c2v".format(dataset_name + '.full')), max_path_count, not_include_methods, hash_to_string_dict)
+#         num_examples = convert_to_model_input_format(data_path, os.path.join(output_dir, dataset_name, "{}.txt".format(dataset_name + '.full')), max_path_count, not_include_methods, hash_to_string_dict)
 
 #         ## Shuffle the output file of above step.
-#         if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))):
-#             print("{} already exists!".format(os.path.join(output_dir, dataset_name, '{}.full.shuffled.c2v'.format(dataset_name))))
+#         if os.path.isfile(os.path.join(output_dir, dataset_name, '{}.full.shuffled.txt'.format(dataset_name))):
+#             print("{} already exists!".format(os.path.join(output_dir, dataset_name, '{}.full.shuffled.txt'.format(dataset_name))))
 #         else:
-#             os.system('./terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.c2v > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.c2v'.format(output_dir=output_dir, dataset_name=dataset_name))
+#             os.system('./terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.txt > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.txt'.format(output_dir=output_dir, dataset_name=dataset_name))
 
 #         ## Splitting the joined and shuffled file into Train-Test-Val sets.
 #         split_dataset(os.path.join(output_dir, dataset_name), dataset_name, num_examples)
 
 #         ## Use "include_paths" to select specific type of paths.
-#         filter_paths(os.path.join(output_dir, dataset_name, '{}.train.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
-#         filter_paths(os.path.join(output_dir, dataset_name, '{}.test.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.test.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
-#         filter_paths(os.path.join(output_dir, dataset_name, '{}.val.c2v'.format(dataset_name)), os.path.join(destination_dir, '{}.val.c2v'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
+#         filter_paths(os.path.join(output_dir, dataset_name, '{}.train.txt'.format(dataset_name)), os.path.join(destination_dir, '{}.train.txt'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
+#         filter_paths(os.path.join(output_dir, dataset_name, '{}.test.txt'.format(dataset_name)), os.path.join(destination_dir, '{}.test.txt'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
+#         filter_paths(os.path.join(output_dir, dataset_name, '{}.val.txt'.format(dataset_name)), os.path.join(destination_dir, '{}.val.txt'.format(dataset_name + '_' + dataset_name_ext)), include_paths, max_path_count)
 
 #         ## Create dictionaries using training data.
-#         create_dictionaries(os.path.join(destination_dir, '{}.train.c2v'.format(dataset_name + '_' + dataset_name_ext)), token_freq_dict, path_freq_dict, target_freq_dict)
+#         create_dictionaries(os.path.join(destination_dir, '{}.train.txt'.format(dataset_name + '_' + dataset_name_ext)), token_freq_dict, path_freq_dict, target_freq_dict)
 
 #         ## Save the dictionary file.
-#         save_dictionaries(os.path.join(destination_dir, '{}.dict.c2v'.format(dataset_name + '_' + dataset_name_ext)), hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, round(num_examples * 0.89))
+#         save_dictionaries(os.path.join(destination_dir, '{}.dict.txt'.format(dataset_name + '_' + dataset_name_ext)), hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, round(num_examples * 0.89))
 
-#         # os.remove(os.path.join(output_dir, dataset_name + '.full.c2v'))
-#         # os.remove(os.path.join(output_dir, dataset_name + '.full.shuffled.c2v'))
+#         # os.remove(os.path.join(output_dir, dataset_name + '.full.txt'))
+#         # os.remove(os.path.join(output_dir, dataset_name + '.full.shuffled.txt'))
