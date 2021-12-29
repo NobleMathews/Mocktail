@@ -47,6 +47,10 @@ def checks():
                 raise Exception("Missing dependency: " + requirement)
     if not Path.exists(Path(os.path.join(dirname, in_path))):
         raise Exception("Missing input directory, please update config.ini")
+    if not Path.exists(Path(os.path.join(dirname, process_path))):
+        os.makedirs(Path(os.path.join(dirname, process_path)))
+    if not Path.exists(Path(os.path.join(dirname, output_dir))):
+        os.makedirs(Path(os.path.join(dirname, output_dir)))
     if not questionary.confirm(
             "Have you updated config with required details ? Also please manually clear the processed and output folder if fresh run").ask():
         raise Exception("Please update and confirm config file contents")
