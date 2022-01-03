@@ -57,10 +57,12 @@ Both the ```projectPreprocessor``` and ```pathExtractor``` modules and ```output
     - The inPath must point to a project directory.
     - The directory will be filled with methods extracted from inPath.
 
-  If outputType is 'multiple':
+  If outputType is 'method':
 
     - The inputPath must point to a directory that contains a set of project directories.
     - For each project directory, all C functions are extracted and saved in the corresponding project directory in outPath.
+
+  If outputType is 'file':
 
 * The maxFileSize parameter can be used to limit the size of the functions extracted from the projects.
 

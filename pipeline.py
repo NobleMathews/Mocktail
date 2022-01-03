@@ -81,7 +81,7 @@ def pre_process():
 
     try:
         filter_files(in_path, intermediate_path)
-        if outputType == "multiple":
+        if outputType == "method":
             split_files_into_functions_multiple(intermediate_path, process_path, maxFileSize)
         elif outputType == "single":
             split_files_into_functions_single(intermediate_path, os.path.join(process_path,"single"), maxFileSize)

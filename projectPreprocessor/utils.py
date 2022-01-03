@@ -44,7 +44,7 @@ def preprocess_cfile(filepath):
 
 def extract_functions_from_file(code):
     if code == "":
-        return []
+        return [], []
 
     # G1 - regex, G3 - static or const, G4 - return type, G5 - Function name, G6 - Argument list, G7 - const keyword
     rproc = r"((static|const)?(\s+)?(\w+(?:\s*[*&]?\s+|\s+[*&]?\s*))?(?:\w+::)?(\w+)\s*\(([\w\s,<>\[\].=&':/*]*?)\)\s*(const)?\s*(?={))"
