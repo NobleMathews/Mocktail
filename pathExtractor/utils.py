@@ -3,7 +3,7 @@ import re
 
 def normalizeAst(ast, graph_name, postOrder, splitToken=False, separator='|', labelPlaceholder='<SELF>',
                  useParentheses=True):
-    label = separator.join(splitToSubtokens(ast.name))
+    label = separator.join(splitToSubtokens(graph_name))
 
     for currentNode in postOrder:
         attributes = normalizeNode(ast, graph_name, currentNode, splitToken, separator, labelPlaceholder,

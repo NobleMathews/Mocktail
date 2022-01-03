@@ -238,10 +238,10 @@ def post_process(options):
                 token_freq_dict, path_freq_dict, target_freq_dict)
 
             # Save the dictionary file.
-            if outputType == "file":
-                save_dictionaries(os.path.join(output_dir, '{}.dict.txt'.format(dataset_name_ext)),
-                                  hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
-                                  round(num_examples * train_split))
+            # if outputType == "file":
+            save_dictionaries(os.path.join(output_dir, '{}.dict.txt'.format(dataset_name_ext)),
+                              hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
+                              round(num_examples * train_split))
         except Exception as e:
             print(e)
 
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     ).ask()
     include_paths = questionary.checkbox(
         "Select paths to include",
-        choices=[Choice("AST", checked=True, disabled="Yes"), Choice("CFG", checked=True), Choice("CDG", checked=False),
+        choices=[Choice("AST", checked=True), Choice("CFG", checked=True), Choice("CDG", checked=False),
                  Choice("DDG", checked=True)],
     ).ask()
     if "Preprocess project" in joblist:
