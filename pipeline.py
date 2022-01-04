@@ -83,10 +83,11 @@ def pre_process():
         filter_files(in_path, intermediate_path)
         if outputType == "method":
             split_files_into_functions_multiple(intermediate_path, process_path, maxFileSize)
-        elif outputType == "single":
-            split_files_into_functions_single(intermediate_path, os.path.join(process_path,"single"), maxFileSize)
         elif outputType == "file":
             filter_files(in_path, process_path)
+        # DEPRECATED - use method instead as it is mostly similar
+        elif outputType == "single":
+            split_files_into_functions_single(intermediate_path, os.path.join(process_path, "single"), maxFileSize)
 
     except Exception as e:
         raise Exception(e)
@@ -235,7 +236,8 @@ def post_process(options):
             # Create dictionaries using training data.
             create_dictionaries(
                 os.path.join(destination_dir, '{}.train.txt'.format(dataset_name + '_' + dataset_name_ext)),
-                token_freq_dict, path_freq_dict, target_freq_dict)
+                os.path.join(output_dir, dataset_name, '{}.dict.txt'.format(dataset_name)),
+                token_freq_dict, path_freq_dict, target_freq_dict, round(num_examples * train_split))
 
             # Save the dictionary file.
             # if outputType == "file":

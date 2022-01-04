@@ -52,7 +52,7 @@ Both the ```projectPreprocessor``` and ```pathExtractor``` modules and ```output
 
 **STEP-1:** Use the ```projectPreprocessor``` module to extract the functions/methods from all the projects.
 
-* If outputType is 'single':
+* If outputType is 'single': (deprecated)
 
     - The inPath must point to a project directory.
     - The directory will be filled with methods extracted from inPath.
