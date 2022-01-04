@@ -150,7 +150,7 @@ def filter_paths(input_file, output_file, collate_file, include_paths, max_path_
                     fout.write(output + '\n')
                     # if outputType == "file":
                     cout.write(output + '\n')
-                    if not output.strip():
+                    if output.strip():
                         total_valid_examples += 1
 
     print("Number of Valid Examples in {file}: {count}".format(file=output_file, count=total_valid_examples))

@@ -1,5 +1,6 @@
 import codecs
 import os, re
+import subprocess, shlex
 
 
 def preprocess_cfile(filepath):
@@ -22,17 +23,15 @@ def preprocess_cfile(filepath):
 
     # Preprocessing using gcc (removes comments, and resolves preprocessor directives other than #include)
     # file name cannot cannot escapable characters
-    os.system("g++ -E _temp_%s > __temp_code__.cpp" % filename)
-
-    if os.path.isfile("__temp_code__.cpp"):
-        # Remove all lines that start with # from the preprocessed code
-        with codecs.open("__temp_code__.cpp", 'r', encoding='utf-8', errors='ignore') as f:
-            for line in f:
-                if not re.search('^#', line):
-                    preproc_code += line
-
-        os.remove("__temp_code__.cpp")
-
+    # os.system("g++ -E _temp_%s > __temp_code__.cpp" % filename)
+    args = shlex.split("g++ -E _temp_" + str(filename))
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    while True:
+        line = proc.stdout.readline().decode("utf-8")
+        if not line:
+            break
+        if not re.search('^#', line):
+            preproc_code += line
     os.remove("_temp_" + filename)
 
     # print(includes)
