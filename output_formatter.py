@@ -22,22 +22,23 @@ def update_freq_dict(freq_dict, word):
         freq_dict[word] = 1
 
 
-def create_dictionaries(input_file, output_file, token_freq_dict, path_freq_dict, target_freq_dict, num_training_examples):
+def create_dictionaries(input_file, output_file, token_freq_dict, path_freq_dict, target_freq_dict,
+                        num_training_examples):
     with open(input_file, 'r', encoding='utf-8') as fin:
-            for line in fin:
-                fields = line.strip('\n').split(' ')
+        for line in fin:
+            fields = line.strip('\n').split(' ')
 
-                update_freq_dict(target_freq_dict, fields[0])
+            update_freq_dict(target_freq_dict, fields[0])
 
-                for path_context in fields[1:]:
-                    if path_context != '':
-                        try:
-                            start_token, path, end_token = path_context.split(',')
-                            update_freq_dict(token_freq_dict, start_token)
-                            update_freq_dict(path_freq_dict, path)
-                            update_freq_dict(token_freq_dict, end_token)
-                        except Exception as e:
-                            print(e)
+            for path_context in fields[1:]:
+                if path_context != '':
+                    try:
+                        start_token, path, end_token = path_context.split(',')
+                        update_freq_dict(token_freq_dict, start_token)
+                        update_freq_dict(path_freq_dict, path)
+                        update_freq_dict(token_freq_dict, end_token)
+                    except Exception as e:
+                        print(e)
     with open(output_file, 'wb') as f:
         pickle.dump(token_freq_dict, f)
         pickle.dump(path_freq_dict, f)
@@ -45,6 +46,7 @@ def create_dictionaries(input_file, output_file, token_freq_dict, path_freq_dict
         pickle.dump(num_training_examples, f)
 
 
+# noinspection PyUnusedLocal
 def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_freq_dict, target_freq_dict, outputType,
                       num_training_examples):
     if os.path.isfile(output_file) and outputType != "file":
@@ -69,9 +71,12 @@ def save_dictionaries(output_file, hash_to_string_dict, token_freq_dict, path_fr
         # target_freq_dict_old.update(target_freq_dict)
         # count = count + num_training_examples
 
-        pickle.dump({k: token_freq_dict_old.get(k, 0) + token_freq_dict.get(k, 0) for k in set(token_freq_dict_old) | set(token_freq_dict)}, f)
-        pickle.dump({k: token_freq_dict_old.get(k, 0) + path_freq_dict.get(k, 0) for k in set(path_freq_dict_old) | set(path_freq_dict)}, f)
-        pickle.dump({k: token_freq_dict_old.get(k, 0) + target_freq_dict.get(k, 0) for k in set(target_freq_dict_old) | set(target_freq_dict)}, f)
+        pickle.dump({k: token_freq_dict_old.get(k, 0) + token_freq_dict.get(k, 0) for k in
+                     set(token_freq_dict_old) | set(token_freq_dict)}, f)
+        pickle.dump({k: token_freq_dict_old.get(k, 0) + path_freq_dict.get(k, 0) for k in
+                     set(path_freq_dict_old) | set(path_freq_dict)}, f)
+        pickle.dump({k: token_freq_dict_old.get(k, 0) + target_freq_dict.get(k, 0) for k in
+                     set(target_freq_dict_old) | set(target_freq_dict)}, f)
         pickle.dump(count + num_training_examples, f)
 
     # with open("path_dict.txt", 'w', encoding="utf-8") as f:
@@ -111,6 +116,7 @@ def split_dataset(output_dir, dataset_name, num_examples, train_split, test_spli
                             fo2.write(line)
 
 
+# noinspection PyUnusedLocal
 def filter_paths(input_file, output_file, collate_file, include_paths, max_path_count, outputType):
     # if os.path.isfile(output_file):
     #     print("{} already exists!".format(output_file))
@@ -126,10 +132,9 @@ def filter_paths(input_file, output_file, collate_file, include_paths, max_path_
                     ast_paths = fields[1: (max_path_count['ast'] + 1)]
                     cfg_paths = fields[(max_path_count['ast'] + 1): (max_path_count['ast'] + max_path_count['cfg'] + 1)]
                     cdg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + 1): (
-                                max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1)]
+                            max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1)]
                     ddg_paths = fields[(max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + 1): (
-                                max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + max_path_count[
-                            'ddg'] + 1)]
+                            max_path_count['ast'] + max_path_count['cfg'] + max_path_count['cdg'] + max_path_count['ddg'] + 1)]
 
                     valid_example = True
                     output = label
@@ -142,9 +147,9 @@ def filter_paths(input_file, output_file, collate_file, include_paths, max_path_
                     if include_paths['ddg'] and valid_example:
                         output += (' ' + ' '.join(ddg_paths))
 
-                    fout.write(output+'\n')
+                    fout.write(output + '\n')
                     # if outputType == "file":
-                    cout.write(output+'\n')
+                    cout.write(output + '\n')
                     if not output.strip():
                         total_valid_examples += 1
 
