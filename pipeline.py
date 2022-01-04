@@ -213,7 +213,7 @@ def post_process(options):
                 #     ))
             else:
                 os.system(
-                    'terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.txt > {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.txt'.format(
+                    'terashuf < {output_dir}/{dataset_name}/{dataset_name}.full.txt 1> {output_dir}/{dataset_name}/{dataset_name}.full.shuffled.txt 2> /dev/null'.format(
                         output_dir=output_dir, dataset_name=dataset_name))
 
             # Splitting the joined and shuffled file into Train-Test-Val sets.
