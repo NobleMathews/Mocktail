@@ -236,7 +236,7 @@ def post_process(options):
             # Create dictionaries using training data.
             create_dictionaries(
                 os.path.join(destination_dir, '{}.train.txt'.format(dataset_name + '_' + dataset_name_ext)),
-                os.path.join(output_dir, dataset_name, '{}.dict.txt'.format(dataset_name)),
+                os.path.join(destination_dir, '{}.dict.txt'.format(dataset_name + '_' + dataset_name_ext)),
                 token_freq_dict, path_freq_dict, target_freq_dict, round(num_examples * train_split))
 
             # Save the dictionary file.
