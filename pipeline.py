@@ -271,7 +271,7 @@ if __name__ == "__main__":
             if len(os.listdir(process_path)) == 0:
                 pre_process()
             else:
-                print("Processing directory is not empty and use checkpoint is one, preprocess is being skipped to prevent loss of checkpoints!")
+                print("Processing directory is not empty and useCheckpoint is True, preprocess is being skipped to prevent loss of checkpoints!")
         else:
             if os.path.exists("time.txt"):
                 with open("time.txt", 'w') as f1:
