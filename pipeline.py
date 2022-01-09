@@ -31,7 +31,7 @@ generateAll = config['pathExtractor'].getboolean('generateAll')
 train_split = config['outputFormatter'].getfloat('train_split')
 test_split = config['outputFormatter'].getfloat('test_split')
 val_split = config['outputFormatter'].getfloat('val_split')
-
+useCheckpoint = config['pathExtractor'].getboolean('useCheckpoint')
 
 def checks():
     # if os.getuid() == 0:
@@ -48,8 +48,10 @@ def checks():
     if not Path.exists(Path(os.path.join(dirname, in_path))):
         raise Exception("Missing input directory, please update config.ini")
     if not Path.exists(Path(os.path.join(dirname, process_path))):
+        print("Created missing processing directory")
         os.makedirs(Path(os.path.join(dirname, process_path)))
     if not Path.exists(Path(os.path.join(dirname, output_dir))):
+        print("Created missing output directory")
         os.makedirs(Path(os.path.join(dirname, output_dir)))
     if not questionary.confirm(
             "Have you updated config with required details ? Also please manually clear the processed and output folder if fresh run").ask():
@@ -110,7 +112,6 @@ def process(dataset_name, include_paths_l):
     downSymbol = config['pathExtractor']['downSymbol']
     labelPlaceholder = config['pathExtractor']['labelPlaceholder']
     useParentheses = config['pathExtractor'].getboolean('useParentheses')
-    useCheckpoint = config['pathExtractor'].getboolean('useCheckpoint')
 
     # Divide the work between processes.
     processFileIndices = get_file_indices(os.path.join(process_path, dataset_name), numOfProcesses)
@@ -124,8 +125,7 @@ def process(dataset_name, include_paths_l):
     # If the output files already exist, either use it as a checkpoint or don't continue the execution.
     if os.path.isfile(os.path.join(process_path, dataset_name, dataset_name + ".txt")):
         if useCheckpoint:
-            # print(datasetName + ".txt file exists. Using it as a checkpoint ...")
-
+            print(dataset_name + ".txt file exists. Using it as a checkpoint ...")
             with open(os.path.join(process_path, dataset_name, dataset_name + ".txt"), 'r') as fc:
                 for line in fc:
                     if line.startswith("file:"):
@@ -138,7 +138,7 @@ def process(dataset_name, include_paths_l):
             initialCount += 1
 
         else:
-            # print(datasetName + ".txt file already exist. Exiting ...")
+            print(dataset_name + ".txt file already exist. Exiting ...")
             sys.exit()
 
     # Create the argument collection, where each element contains the array of parameters for each process.
@@ -264,13 +264,19 @@ if __name__ == "__main__":
                  Choice("DDG", checked=True)],
     ).ask()
     if "Preprocess project" in joblist:
-        if os.path.exists("time.txt"):
-            with open("time.txt", 'w') as f1:
-                pass
         if os.path.exists("time_summary.txt"):
             with open("time_summary.txt", 'w') as f2:
                 pass
-        pre_process()
+        if useCheckpoint:
+            if len(os.listdir(process_path)) == 0:
+                pre_process()
+            else:
+                print("Processing directory is not empty and use checkpoint is one, preprocess is being skipped to prevent loss of checkpoints!")
+        else:
+            if os.path.exists("time.txt"):
+                with open("time.txt", 'w') as f1:
+                    pass
+            pre_process()
     if "Path extraction" in joblist:
         for f in os.scandir("./2_processed"):
             if f.is_dir():

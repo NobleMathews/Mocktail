@@ -44,6 +44,7 @@ def generate_dataset(params):
         # Create environment for joern.
         file_name = fileIndex
         in_file_path = os.path.join(in_path, datasetName, file_name)
+        print("Starting path extraction from " + str(datasetName) + " dataset for "+str(file_name))
         # # If the file is not in dataset as a c file, continue.
         # if not os.path.isfile(in_file_path):
         #     continue
@@ -52,8 +53,7 @@ def generate_dataset(params):
         statinfo = os.stat(in_file_path)
         if statinfo.st_size > maxFileSize:
             continue
-
-        print("begin joern")
+        # print("begin joern")
         time_in = time.time()
         copy(in_file_path, os.path.join(workingDir, "workspace"))
         os.chdir(workingDir)
